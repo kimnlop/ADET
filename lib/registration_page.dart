@@ -1,9 +1,8 @@
-// ignore_for_file: prefer_const_constructors, use_build_context_synchronously
-
+// ignore_for_file: prefer_const_constructors, library_private_types_in_public_api, use_key_in_widget_constructors
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'database_service.dart';
-import 'success_page.dart'; // Import the success page
+import 'success_page.dart';
 
 class RegistrationPage extends StatefulWidget {
   @override
@@ -18,10 +17,24 @@ class _RegistrationPageState extends State<RegistrationPage> {
       TextEditingController();
 
   bool _isLoading = false;
+  bool _passwordVisible = false;
+  bool _confirmPasswordVisible = false;
   String _emailError = '';
   String _nameError = '';
-  String _confirmPasswordError =
-      ''; // Added error state for confirmation password
+  String _passwordError = '';
+  String _confirmPasswordError = '';
+
+  bool get _isFormValid {
+    return _emailError.isEmpty &&
+        _nameError.isEmpty &&
+        _passwordError.isEmpty &&
+        _confirmPasswordError.isEmpty &&
+        emailController.text.isNotEmpty &&
+        nameController.text.isNotEmpty &&
+        passwordController.text.isNotEmpty &&
+        confirmPasswordController.text.isNotEmpty &&
+        passwordController.text == confirmPasswordController.text;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,54 +54,57 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: Column(
                     children: <Widget>[
-                      SizedBox(height: 400), // Lowered the input fields
+                      SizedBox(height: 400),
                       _buildTextField(
                         emailController,
                         'Email',
                         TextInputType.emailAddress,
-                        RegExp(r'^[\w.-]+@[a-zA-Z]+\.[a-zA-Z]+$'),
                         _emailError,
+                        RegExp(r'^[\w.-]+@[a-zA-Z]+\.[a-zA-Z]+$'),
                       ),
-                      SizedBox(height: 20), // Reduced spacing between fields
+                      SizedBox(height: 20),
                       _buildTextField(
                         nameController,
                         'Name',
                         TextInputType.text,
-                        RegExp(r'^[a-zA-Z0-9]+$'),
                         _nameError,
+                        RegExp(r'^[a-zA-Z0-9 ]+$'),
                       ),
-                      SizedBox(height: 20), // Reduced spacing between fields
+                      SizedBox(height: 20),
                       _buildTextField(
                         passwordController,
                         'Password',
                         TextInputType.visiblePassword,
+                        _passwordError,
                         null,
-                        null, // No RegExp for passwords, but you might want to implement some checks
                         isPassword: true,
+                        isPasswordVisible: _passwordVisible,
+                        togglePasswordVisibility: () => setState(
+                            () => _passwordVisible = !_passwordVisible),
                       ),
-                      SizedBox(height: 20), // Reduced spacing between fields
+                      SizedBox(height: 20),
                       _buildTextField(
                         confirmPasswordController,
                         'Confirm Password',
                         TextInputType.visiblePassword,
+                        _confirmPasswordError,
                         null,
-                        _confirmPasswordError, // Pass the confirm password error
                         isPassword: true,
+                        isPasswordVisible: _confirmPasswordVisible,
+                        togglePasswordVisibility: () => setState(() =>
+                            _confirmPasswordVisible = !_confirmPasswordVisible),
                       ),
-                      SizedBox(height: 30), // Increased spacing below fields
+                      SizedBox(height: 30),
                       ElevatedButton(
                         onPressed:
-                            _isLoading || _hasErrors() ? null : _register,
+                            (!_isFormValid || _isLoading) ? null : _register,
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 16.0), // Increased button size
+                          padding: const EdgeInsets.symmetric(vertical: 9.0),
                           child: _isLoading
                               ? CircularProgressIndicator()
                               : Text(
                                   'Register',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                  ), // Increased button text size
+                                  style: TextStyle(fontSize: 15),
                                 ),
                         ),
                       ),
@@ -117,76 +133,80 @@ class _RegistrationPageState extends State<RegistrationPage> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label,
-      TextInputType keyboardType, RegExp? regExp, String? errorText,
-      {bool isPassword = false}) {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width * 0.8,
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        obscureText: isPassword,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(color: Colors.white),
-          filled: true,
-          fillColor: Colors.white.withOpacity(0.5),
-          border: OutlineInputBorder(
-            borderSide: BorderSide.none,
-            borderRadius: BorderRadius.circular(10.0),
-          ),
-          errorText: errorText?.isNotEmpty == true ? errorText : null,
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    TextInputType keyboardType,
+    String errorText,
+    RegExp? regExp, {
+    bool isPassword = false,
+    bool isPasswordVisible = false,
+    VoidCallback? togglePasswordVisibility,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      obscureText: isPassword && !isPasswordVisible,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.white),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.5),
+        border: OutlineInputBorder(
+          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(10.0),
         ),
-        onChanged: (value) {
-          if (regExp != null && !regExp.hasMatch(value)) {
-            setState(() {
-              if (label == 'Email') {
-                _emailError = 'Invalid email format';
-              } else if (label == 'Name') {
-                _nameError = 'Invalid name format';
-              }
-            });
-          } else {
-            setState(() {
-              if (label == 'Email') {
-                _emailError = '';
-              } else if (label == 'Name') {
-                _nameError = '';
-              }
-            });
-          }
-          if (label == 'Confirm Password') {
-            // Additional check for confirm password field
-            if (passwordController.text != value) {
-              setState(() => _confirmPasswordError = 'Passwords do not match');
-            } else {
-              setState(() => _confirmPasswordError = '');
-            }
-          }
-        },
+        errorText: errorText.isNotEmpty ? errorText : null,
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(isPasswordVisible
+                    ? Icons.visibility
+                    : Icons.visibility_off),
+                onPressed: togglePasswordVisibility,
+              )
+            : null,
       ),
+      onChanged: (value) => _validateField(label, value),
     );
   }
 
-  bool _hasErrors() {
-    return _emailError.isNotEmpty ||
-        _nameError.isNotEmpty ||
-        _confirmPasswordError.isNotEmpty;
+  void _validateField(String label, String value) {
+    setState(() {
+      if (label == 'Email' &&
+          !RegExp(r'^[\w.-]+@[a-zA-Z]+\.[a-zA-Z]+$').hasMatch(value)) {
+        _emailError = 'Invalid email format';
+      } else if (label == 'Email') {
+        _emailError = '';
+      }
+      if (label == 'Name' && !RegExp(r'^[a-zA-Z0-9 ]+$').hasMatch(value)) {
+        _nameError = 'Invalid name format';
+      } else if (label == 'Name') {
+        _nameError = '';
+      }
+      if (label == 'Password') {
+        bool passwordValid =
+            RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$').hasMatch(value);
+        _passwordError = passwordValid
+            ? ''
+            : 'Password must be at least 8 characters long and include a \nnumber';
+      }
+      if (label == 'Confirm Password' || label == 'Password') {
+        _checkPasswordsMatch();
+      }
+    });
+  }
+
+  void _checkPasswordsMatch() {
+    if (passwordController.text != confirmPasswordController.text) {
+      _confirmPasswordError = 'Passwords do not match';
+    } else {
+      _confirmPasswordError = '';
+    }
   }
 
   void _register() async {
-    if (passwordController.text != confirmPasswordController.text) {
-      // If passwords don't match, set error and prevent further execution
-      setState(() {
-        _confirmPasswordError = 'Passwords do not match';
-      });
-      return;
-    }
-
     setState(() {
       _isLoading = true;
-      _confirmPasswordError =
-          ''; // Reset error state upon attempting to register
     });
 
     try {
@@ -194,39 +214,41 @@ class _RegistrationPageState extends State<RegistrationPage> {
         emailController.text.trim(),
         passwordController.text.trim(),
       );
-
       await DatabaseService().addUser(userCredential.user!.uid, {
         'email': emailController.text.trim(),
         'name': nameController.text.trim(),
       });
 
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text("Success"),
-            content: Text("Your account has been successfully created."),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => SuccessPage()),
-                  );
-                },
-                child: Text("OK"),
-              ),
-            ],
-          );
-        },
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => SuccessPage()),
       );
     } catch (e) {
-      // Handle registration failure
+      _showErrorDialog("Acccount already exist. Please try again.");
     } finally {
       setState(() {
         _isLoading = false;
       });
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Error"),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }

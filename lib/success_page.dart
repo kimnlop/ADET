@@ -1,37 +1,56 @@
-// ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, deprecated_member_use
+// ignore_for_file: prefer_final_fields, prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:flutter/material.dart';
+import 'feed_tab.dart'; // Import your feed tab widget
+import 'haircut_recommender_tab.dart'; // Import your haircut recommender tab widget
+import 'my_account_tab.dart'; // Import your my account tab widget
 
-class SuccessPage extends StatelessWidget {
+class SuccessPage extends StatefulWidget {
+  @override
+  _SuccessPageState createState() => _SuccessPageState();
+}
+
+class _SuccessPageState extends State<SuccessPage> {
+  int _selectedIndex = 0; // Track selected tab index
+
+  static List<Widget> _widgetOptions = <Widget>[
+    FeedTab(), // Define your feed tab widget
+    HaircutRecommenderTab(), // Define your haircut recommender tab widget
+    MyAccountTab(), // Define your my account tab widget
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Prevent navigation via back button
-        return false;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('Success'),
-          automaticallyImplyLeading: false, // Hide back button
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.check_circle,
-                color: Colors.green,
-                size: 100,
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Registration Successful!',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(''),
+        automaticallyImplyLeading: false, // Hide back button
+      ),
+      body: _widgetOptions.elementAt(_selectedIndex),
+      bottomNavigationBar: BottomNavigationBar(
+        items: <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Feed',
           ),
-        ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: 'Haircut Recommender',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_circle),
+            label: 'My Account',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.green,
+        onTap: _onItemTapped,
       ),
     );
   }
