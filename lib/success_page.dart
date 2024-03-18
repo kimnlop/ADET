@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_final_fields, prefer_const_constructors, prefer_const_literals_to_create_immutables
+// ignore_for_file: prefer_const_constructors, prefer_final_fields
 
 import 'package:flutter/material.dart';
 import 'feed_tab.dart'; // Import your feed tab widget
@@ -13,7 +13,8 @@ class SuccessPage extends StatefulWidget {
 class _SuccessPageState extends State<SuccessPage> {
   int _selectedIndex = 0; // Track selected tab index
 
-  static List<Widget> _widgetOptions = <Widget>[
+  // Removed static keyword to ensure each instance of SuccessPage has its own widget list
+  List<Widget> _widgetOptions = <Widget>[
     FeedTab(), // Define your feed tab widget
     HaircutRecommenderTab(), // Define your haircut recommender tab widget
     MyAccountTab(), // Define your my account tab widget
@@ -32,9 +33,12 @@ class _SuccessPageState extends State<SuccessPage> {
         title: Text(''),
         automaticallyImplyLeading: false, // Hide back button
       ),
-      body: _widgetOptions.elementAt(_selectedIndex),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _widgetOptions,
+      ),
       bottomNavigationBar: BottomNavigationBar(
-        items: <BottomNavigationBarItem>[
+        items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Feed',

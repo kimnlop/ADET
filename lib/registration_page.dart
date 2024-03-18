@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_const_constructors, library_private_types_in_public_api, use_key_in_widget_constructors
+// ignore_for_file: prefer_const_constructors, library_private_types_in_public_api, use_key_in_widget_constructors, use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'database_service.dart';
@@ -210,22 +210,19 @@ class _RegistrationPageState extends State<RegistrationPage> {
     });
 
     try {
-      // Check if the username is already taken
-      bool isUsernameTaken = await DatabaseService()
-          .isUsernameTaken(userNameController.text.trim());
-      if (isUsernameTaken) {
-        _showErrorDialog("Username already taken. Please choose another one.");
-        return;
+      final username = userNameController.text.trim().toLowerCase();
+      final isTaken = await DatabaseService().isUsernameTaken(username);
+      if (isTaken) {
+        throw 'Username already taken';
       }
 
-      // Perform registration if the username is unique
       final userCredential = await AuthService().signUp(
         emailController.text.trim(),
         passwordController.text.trim(),
       );
       await DatabaseService().addUser(userCredential.user!.uid, {
         'email': emailController.text.trim(),
-        'userName': userNameController.text.trim(),
+        'userName': username,
       });
 
       Navigator.pushReplacement(
@@ -233,7 +230,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         MaterialPageRoute(builder: (context) => SuccessPage()),
       );
     } catch (e) {
-      _showErrorDialog("Account already exists. Please try again.");
+      _showErrorDialog(e.toString());
     } finally {
       setState(() {
         _isLoading = false;
