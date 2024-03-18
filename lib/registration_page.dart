@@ -11,7 +11,7 @@ class RegistrationPage extends StatefulWidget {
 
 class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController nameController = TextEditingController();
+  final TextEditingController userNameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController =
       TextEditingController();
@@ -30,7 +30,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         _passwordError.isEmpty &&
         _confirmPasswordError.isEmpty &&
         emailController.text.isNotEmpty &&
-        nameController.text.isNotEmpty &&
+        userNameController.text.isNotEmpty &&
         passwordController.text.isNotEmpty &&
         confirmPasswordController.text.isNotEmpty &&
         passwordController.text == confirmPasswordController.text;
@@ -64,8 +64,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
                       ),
                       SizedBox(height: 20),
                       _buildTextField(
-                        nameController,
-                        'Name',
+                        userNameController,
+                        'Username',
                         TextInputType.text,
                         _nameError,
                         RegExp(r'^[a-zA-Z0-9 ]+$'),
@@ -210,13 +210,22 @@ class _RegistrationPageState extends State<RegistrationPage> {
     });
 
     try {
+      // Check if the username is already taken
+      bool isUsernameTaken = await DatabaseService()
+          .isUsernameTaken(userNameController.text.trim());
+      if (isUsernameTaken) {
+        _showErrorDialog("Username already taken. Please choose another one.");
+        return;
+      }
+
+      // Perform registration if the username is unique
       final userCredential = await AuthService().signUp(
         emailController.text.trim(),
         passwordController.text.trim(),
       );
       await DatabaseService().addUser(userCredential.user!.uid, {
         'email': emailController.text.trim(),
-        'name': nameController.text.trim(),
+        'userName': userNameController.text.trim(),
       });
 
       Navigator.pushReplacement(
@@ -224,7 +233,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         MaterialPageRoute(builder: (context) => SuccessPage()),
       );
     } catch (e) {
-      _showErrorDialog("Acccount already exist. Please try again.");
+      _showErrorDialog("Account already exists. Please try again.");
     } finally {
       setState(() {
         _isLoading = false;

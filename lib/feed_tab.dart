@@ -1,6 +1,7 @@
-import 'dart:io';
-import 'dart:typed_data';
+// ignore_for_file: prefer_const_constructors
 
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -19,13 +20,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: Color.fromRGBO(1, 67, 115, 1),
+        primaryColor: const Color.fromRGBO(1, 67, 115, 1),
         buttonTheme: ButtonThemeData(
-          buttonColor: Color.fromRGBO(230, 72, 111, 1),
+          buttonColor: const Color.fromRGBO(230, 72, 111, 1),
           textTheme: ButtonTextTheme.primary,
         ),
         colorScheme: ColorScheme.fromSwatch().copyWith(
-          secondary: Color.fromRGBO(254, 173, 86, 1),
+          secondary: const Color.fromRGBO(254, 173, 86, 1),
         ),
       ),
       home: FeedTab(),
@@ -44,105 +45,106 @@ class _FeedTabState extends State<FeedTab> {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ScrollController _scrollController = ScrollController();
 
-  TextEditingController _titleController = TextEditingController();
-  TextEditingController _descriptionController = TextEditingController();
-  TextEditingController _photoController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _photoController = TextEditingController();
 
-  // Map to store loaded images
+  late StreamSubscription<QuerySnapshot> _feedSubscription;
   final Map<String, ImageProvider> _imageCache = {};
+  List<FeedItem> _feedItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribeToFeed();
+  }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _feedSubscription.cancel();
     super.dispose();
+  }
+
+  void _subscribeToFeed() {
+    _feedSubscription = _firestore
+        .collection('feedItems')
+        .orderBy('uploadDate', descending: true)
+        .snapshots()
+        .listen((snapshot) async {
+      for (var doc in snapshot.docs.reversed) {
+        // Reverse the order to prepend new items
+        var userDoc =
+            await _firestore.collection('users').doc(doc['userId']).get();
+        String userName = userDoc['userName'];
+
+        bool alreadyExists = _feedItems.any((item) => item.id == doc.id);
+
+        if (!alreadyExists) {
+          setState(() {
+            _feedItems.insert(
+                0, FeedItem.fromSnapshot(doc, userName)); // Prepend new items
+          });
+        }
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: StreamBuilder(
-        stream: _firestore
-            .collection('feedItems')
-            .orderBy('upvotes', descending: true)
-            .snapshots(),
-        builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-          if (!snapshot.hasData) {
-            return Center(child: CircularProgressIndicator());
-          }
-          return ListView.builder(
-            controller: _scrollController,
-            itemCount: snapshot.data!.docs.length,
-            itemBuilder: (context, index) {
-              var feedItem = snapshot.data!.docs[index];
-              return FutureBuilder<DocumentSnapshot>(
-                future: _firestore
-                    .collection('users')
-                    .doc(feedItem['userId'])
-                    .get(),
-                builder: (BuildContext context,
-                    AsyncSnapshot<DocumentSnapshot> userSnapshot) {
-                  if (userSnapshot.connectionState == ConnectionState.done) {
-                    if (userSnapshot.hasData && userSnapshot.data != null) {
-                      String userName = userSnapshot.data!['name'];
-                      return _buildFeedItem(FeedItem(
-                        id: feedItem.id,
-                        title: feedItem['title'],
-                        description: feedItem['description'],
-                        upvotes: feedItem['upvotes'],
-                        upvoters: List<String>.from(feedItem['upvoters'] ?? []),
-                        userName: _hideMiddleCharacters(userName),
-                        photoUrl: feedItem['photoUrl'],
-                      ));
-                    } else {
-                      return SizedBox(); // Return empty widget if user data not available
-                    }
-                  } else {
-                    return SizedBox(); // Return empty widget while data is loading
-                  }
-                },
-              );
-            },
-          );
+      appBar: AppBar(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/crowdcutslogo2.png',
+              height: 65, // Adjust the height as needed
+            ),
+          ],
+        ),
+        automaticallyImplyLeading: false, // Hide back button
+      ),
+      body: ListView.builder(
+        controller: _scrollController,
+        itemCount: _feedItems.length,
+        itemBuilder: (context, index) {
+          var feedItem = _feedItems[index];
+          return _buildFeedItem(feedItem);
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showPostDialog,
         label: Text('Create Post',
-            style: TextStyle(color: Color.fromRGBO(1, 67, 115, 1))),
-        icon: Icon(Icons.add, size: 24, color: Color.fromRGBO(254, 173, 86, 1)),
-        backgroundColor: Color.fromRGBO(230, 72, 111, 1),
+            style: TextStyle(color: const Color.fromRGBO(1, 67, 115, 1))),
+        icon: Icon(Icons.add,
+            size: 24, color: const Color.fromRGBO(254, 173, 86, 1)),
+        backgroundColor: const Color.fromRGBO(230, 72, 111, 1),
       ),
     );
   }
 
   Widget _buildFeedItem(FeedItem feedItem) {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 2.0),
+      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       decoration: BoxDecoration(
         color: Colors.white,
+        borderRadius: BorderRadius.circular(10.0),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.5),
-            spreadRadius: 0,
-            blurRadius: 2,
-            offset: Offset(0, 2),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (feedItem.photoUrl != null)
-            _buildCachedImage(feedItem.photoUrl!), // Load image from cache
+          if (feedItem.photoUrl != null) _buildCachedImage(feedItem.photoUrl!),
           Padding(
-            padding: EdgeInsets.all(12.0),
-            child: Text(
-              feedItem.userName,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -150,36 +152,14 @@ class _FeedTabState extends State<FeedTab> {
                   feedItem.title,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 8),
+                Text(
+                  'by ${feedItem.userName}',
+                  style: TextStyle(fontSize: 10, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
                 Text(
                   feedItem.description,
                   style: TextStyle(fontSize: 16),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.content_cut,
-                        color:
-                            feedItem.upvoters.contains(_auth.currentUser?.uid)
-                                ? Color.fromRGBO(254, 173, 86, 1)
-                                : Colors.grey,
-                      ),
-                      onPressed: () => _handleUpvote(feedItem),
-                    ),
-                    Text(
-                      '${feedItem.upvotes}',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -190,11 +170,9 @@ class _FeedTabState extends State<FeedTab> {
   }
 
   Widget _buildCachedImage(String photoUrl) {
-    // Check if image is already loaded
     if (_imageCache.containsKey(photoUrl)) {
       return Image(image: _imageCache[photoUrl]!);
     } else {
-      // If not, load image and store it in cache
       return FutureBuilder(
         future: _loadImage(photoUrl),
         builder: (context, AsyncSnapshot<ImageProvider> snapshot) {
@@ -203,7 +181,6 @@ class _FeedTabState extends State<FeedTab> {
           } else if (snapshot.hasError) {
             return Center(child: Text('Error loading image'));
           } else {
-            // Store image in cache
             _imageCache[photoUrl] = snapshot.data!;
             return Image(image: snapshot.data!);
           }
@@ -212,18 +189,16 @@ class _FeedTabState extends State<FeedTab> {
     }
   }
 
-  String _hideMiddleCharacters(String name) {
-    int middle = name.length ~/ 2;
-    return name.replaceRange(middle - 1, middle + 2, '***');
-  }
-
-  void _handleUpvote(FeedItem feedItem) {
-    var user = _auth.currentUser;
-    if (user != null && !feedItem.upvoters.contains(user.uid)) {
-      _firestore.collection('feedItems').doc(feedItem.id).update({
-        'upvotes': FieldValue.increment(1),
-        'upvoters': FieldValue.arrayUnion([user.uid]),
-      });
+  Future<ImageProvider> _loadImage(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        return MemoryImage(response.bodyBytes);
+      } else {
+        throw Exception('Failed to load image');
+      }
+    } catch (e) {
+      throw Exception('Failed to load image: $e');
     }
   }
 
@@ -243,7 +218,7 @@ class _FeedTabState extends State<FeedTab> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               TextField(
                 controller: _descriptionController,
                 decoration: InputDecoration(
@@ -251,43 +226,27 @@ class _FeedTabState extends State<FeedTab> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   Expanded(
                     child: TextButton.icon(
-                      onPressed: () async {
-                        final pickedFile = await ImagePicker()
-                            .pickImage(source: ImageSource.gallery);
-                        if (pickedFile != null) {
-                          setState(() {
-                            _photoController.text = pickedFile.path!;
-                          });
-                        }
-                      },
+                      onPressed: () => _pickImage(ImageSource.gallery),
                       icon: Icon(Icons.photo_library),
                       label: Text('Choose Photo'),
                     ),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: TextButton.icon(
-                      onPressed: () async {
-                        final pickedFile = await ImagePicker()
-                            .pickImage(source: ImageSource.camera);
-                        if (pickedFile != null) {
-                          setState(() {
-                            _photoController.text = pickedFile.path!;
-                          });
-                        }
-                      },
+                      onPressed: () => _pickImage(ImageSource.camera),
                       icon: Icon(Icons.camera_alt),
                       label: Text('Take Photo'),
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               TextField(
                 controller: _photoController,
                 enabled: false,
@@ -304,24 +263,7 @@ class _FeedTabState extends State<FeedTab> {
               child: Text('Cancel', style: TextStyle(color: Colors.redAccent)),
             ),
             TextButton(
-              onPressed: () async {
-                var user = _auth.currentUser;
-                if (user != null) {
-                  String? photoUrl = await _uploadPhoto(_photoController.text);
-                  await _firestore.collection('feedItems').add({
-                    'title': _titleController.text,
-                    'description': _descriptionController.text,
-                    'upvotes': 0,
-                    'upvoters': [],
-                    'userId': user.uid,
-                    'photoUrl': photoUrl,
-                  });
-                  _titleController.clear();
-                  _descriptionController.clear();
-                  _photoController.clear();
-                  Navigator.of(context).pop();
-                }
-              },
+              onPressed: _post,
               child: Text('Post', style: TextStyle(color: Colors.green)),
             ),
           ],
@@ -330,16 +272,55 @@ class _FeedTabState extends State<FeedTab> {
     );
   }
 
-  Future<ImageProvider> _loadImage(String url) async {
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        return MemoryImage(response.bodyBytes);
-      } else {
-        throw Exception('Failed to load image');
+  void _pickImage(ImageSource source) async {
+    final pickedFile = await ImagePicker().pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() {
+        _photoController.text = pickedFile.path!;
+      });
+    }
+  }
+
+  void _post() async {
+    var user = _auth.currentUser;
+    if (user != null) {
+      // Check if title is empty
+      if (_titleController.text.trim().isEmpty) {
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text('Error'),
+              content: Text('Title cannot be empty.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+        return; // Exit the method if title is empty
       }
-    } catch (e) {
-      throw Exception('Failed to load image: $e');
+
+      String? photoUrl = await _uploadPhoto(_photoController.text);
+      await _firestore.collection('feedItems').add({
+        'title': _titleController.text,
+        'description': _descriptionController.text,
+        'userId': user.uid,
+        'photoUrl': photoUrl,
+        'uploadDate': FieldValue.serverTimestamp(), // Set upload date
+      });
+      _clearControllers();
+      Navigator.of(context).pop();
+
+      // Scroll to the top of the feed
+      _scrollController.animateTo(
+        0.0,
+        duration: Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
@@ -382,14 +363,19 @@ class _FeedTabState extends State<FeedTab> {
     final filePath = uri.path;
     return filePath!;
   }
+
+  void _clearControllers() {
+    _titleController.clear();
+    _descriptionController.clear();
+    _photoController.clear();
+  }
 }
 
 class FeedItem {
   final String id;
   final String title;
   final String description;
-  int upvotes;
-  final List<String> upvoters;
+  final String userId;
   final String userName;
   final String? photoUrl;
 
@@ -397,9 +383,19 @@ class FeedItem {
     required this.id,
     required this.title,
     required this.description,
-    this.upvotes = 0,
-    required this.upvoters,
+    required this.userId,
     required this.userName,
     this.photoUrl,
   });
+
+  factory FeedItem.fromSnapshot(DocumentSnapshot snapshot, String userName) {
+    return FeedItem(
+      id: snapshot.id,
+      title: snapshot['title'],
+      description: snapshot['description'],
+      userId: snapshot['userId'],
+      userName: userName,
+      photoUrl: snapshot['photoUrl'],
+    );
+  }
 }
