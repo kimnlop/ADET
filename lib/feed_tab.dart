@@ -1,5 +1,4 @@
-// ignore_for_file: prefer_const_constructors, use_build_context_synchronously, avoid_print, library_private_types_in_public_api
-
+// ignore_for_file: use_key_in_widget_constructors, prefer_const_constructors, library_private_types_in_public_api, prefer_final_fields
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -52,6 +51,8 @@ class _FeedTabState extends State<FeedTab> {
   late StreamSubscription<QuerySnapshot> _feedSubscription;
   final Map<String, ImageProvider> _imageCache = {};
   List<FeedItem> _feedItems = [];
+  bool _isPosting = false;
+  bool _isPostingInProgress = false;
 
   @override
   void initState() {
@@ -73,7 +74,6 @@ class _FeedTabState extends State<FeedTab> {
         .snapshots()
         .listen((snapshot) async {
       for (var doc in snapshot.docs.reversed) {
-        // Reverse the order to prepend new items
         var userDoc =
             await _firestore.collection('users').doc(doc['userId']).get();
         String userName = userDoc['userName'];
@@ -82,8 +82,7 @@ class _FeedTabState extends State<FeedTab> {
 
         if (!alreadyExists) {
           setState(() {
-            _feedItems.insert(
-                0, FeedItem.fromSnapshot(doc, userName)); // Prepend new items
+            _feedItems.insert(0, FeedItem.fromSnapshot(doc, userName));
           });
         }
       }
@@ -99,7 +98,7 @@ class _FeedTabState extends State<FeedTab> {
           children: [
             Image.asset(
               'assets/crowdcutslogo2.png',
-              height: 65, // Adjust the height as needed
+              height: 65,
             ),
           ],
         ),
@@ -114,7 +113,7 @@ class _FeedTabState extends State<FeedTab> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showPostDialog,
+        onPressed: _isPosting ? null : _showPostDialog,
         label: Text('Create Post',
             style: TextStyle(color: const Color.fromRGBO(1, 67, 115, 1))),
         icon: Icon(Icons.add,
@@ -264,7 +263,9 @@ class _FeedTabState extends State<FeedTab> {
             ),
             TextButton(
               onPressed: _post,
-              child: Text('Post', style: TextStyle(color: Colors.green)),
+              child: _isPosting
+                  ? CircularProgressIndicator()
+                  : Text('Post', style: TextStyle(color: Colors.green)),
             ),
           ],
         );
@@ -282,10 +283,21 @@ class _FeedTabState extends State<FeedTab> {
   }
 
   void _post() async {
+    if (_isPostingInProgress) {
+      return;
+    }
+
+    _isPostingInProgress = true;
+
+    setState(() {
+      _isPosting = true;
+    });
+
     var user = _auth.currentUser;
     if (user != null) {
-      // Check if title is empty
       if (_titleController.text.trim().isEmpty) {
+        _enablePosting();
+        _clearPostingInProgress();
         showDialog(
           context: context,
           builder: (context) {
@@ -301,7 +313,7 @@ class _FeedTabState extends State<FeedTab> {
             );
           },
         );
-        return; // Exit the method if title is empty
+        return;
       }
 
       String? photoUrl = await _uploadPhoto(_photoController.text);
@@ -314,14 +326,15 @@ class _FeedTabState extends State<FeedTab> {
       });
       _clearControllers();
       Navigator.of(context).pop();
-
-      // Scroll to the top of the feed
       _scrollController.animateTo(
         0.0,
         duration: Duration(milliseconds: 500),
         curve: Curves.easeInOut,
       );
     }
+    _enablePosting();
+    // Clear the flag
+    _clearPostingInProgress();
   }
 
   Future<String?> _uploadPhoto(String photoUrl) async {
@@ -368,6 +381,16 @@ class _FeedTabState extends State<FeedTab> {
     _titleController.clear();
     _descriptionController.clear();
     _photoController.clear();
+  }
+
+  void _enablePosting() {
+    setState(() {
+      _isPosting = false;
+    });
+  }
+
+  void _clearPostingInProgress() {
+    _isPostingInProgress = false;
   }
 }
 
