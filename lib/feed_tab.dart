@@ -1,4 +1,5 @@
-// ignore_for_file: use_key_in_widget_constructors, prefer_const_constructors, library_private_types_in_public_api, prefer_final_fields
+// ignore_for_file: prefer_const_constructors, use_key_in_widget_constructors, library_private_types_in_public_api, prefer_final_fields, avoid_print
+
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -53,6 +54,7 @@ class _FeedTabState extends State<FeedTab> {
   List<FeedItem> _feedItems = [];
   bool _isPosting = false;
   bool _isPostingInProgress = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -68,6 +70,10 @@ class _FeedTabState extends State<FeedTab> {
   }
 
   void _subscribeToFeed() {
+    setState(() {
+      _isLoading = true;
+    });
+
     _feedSubscription = _firestore
         .collection('feedItems')
         .orderBy('uploadDate', descending: true)
@@ -86,41 +92,35 @@ class _FeedTabState extends State<FeedTab> {
           });
         }
       }
+
+      setState(() {
+        _isLoading = false;
+      });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/crowdcutslogo2.png',
-              height: 65,
+    return _isLoading
+        ? Center(child: CircularProgressIndicator())
+        : Scaffold(
+            body: ListView.builder(
+              controller: _scrollController,
+              itemCount: _feedItems.length,
+              itemBuilder: (context, index) {
+                var feedItem = _feedItems[index];
+                return _buildFeedItem(feedItem);
+              },
             ),
-          ],
-        ),
-        automaticallyImplyLeading: false, // Hide back button
-      ),
-      body: ListView.builder(
-        controller: _scrollController,
-        itemCount: _feedItems.length,
-        itemBuilder: (context, index) {
-          var feedItem = _feedItems[index];
-          return _buildFeedItem(feedItem);
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _isPosting ? null : _showPostDialog,
-        label: Text('Create Post',
-            style: TextStyle(color: const Color.fromRGBO(1, 67, 115, 1))),
-        icon: Icon(Icons.add,
-            size: 24, color: const Color.fromRGBO(254, 173, 86, 1)),
-        backgroundColor: const Color.fromRGBO(230, 72, 111, 1),
-      ),
-    );
+            floatingActionButton: FloatingActionButton.extended(
+              onPressed: _isPosting ? null : _showPostDialog,
+              label: Text('Create Post',
+                  style: TextStyle(color: const Color.fromRGBO(1, 67, 115, 1))),
+              icon: Icon(Icons.add,
+                  size: 24, color: const Color.fromRGBO(254, 173, 86, 1)),
+              backgroundColor: const Color.fromRGBO(230, 72, 111, 1),
+            ),
+          );
   }
 
   Widget _buildFeedItem(FeedItem feedItem) {
@@ -205,75 +205,80 @@ class _FeedTabState extends State<FeedTab> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text('New Post', style: TextStyle(color: Colors.deepPurple)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  hintText: 'Title',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _descriptionController,
-                decoration: InputDecoration(
-                  hintText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title:
+                  Text('New Post', style: TextStyle(color: Colors.deepPurple)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: () => _pickImage(ImageSource.gallery),
-                      icon: Icon(Icons.photo_library),
-                      label: Text('Choose Photo'),
+                  TextField(
+                    controller: _titleController,
+                    decoration: InputDecoration(
+                      hintText: 'Title',
+                      border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: () => _pickImage(ImageSource.camera),
-                      icon: Icon(Icons.camera_alt),
-                      label: Text('Take Photo'),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _descriptionController,
+                    decoration: InputDecoration(
+                      hintText: 'Description',
+                      border: OutlineInputBorder(),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton.icon(
+                          onPressed: () =>
+                              _pickImage(ImageSource.gallery, setState),
+                          icon: Icon(Icons.photo_library),
+                          label: Text('Choose Photo'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextButton.icon(
+                          onPressed: () =>
+                              _pickImage(ImageSource.camera, setState),
+                          icon: Icon(Icons.camera_alt),
+                          label: Text('Take Photo'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  _photoController.text.isNotEmpty
+                      ? Text('Added image successfully',
+                          style: TextStyle(color: Colors.green))
+                      : SizedBox(),
                 ],
               ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _photoController,
-                enabled: false,
-                decoration: InputDecoration(
-                  hintText: 'Photo',
-                  border: OutlineInputBorder(),
+              actions: [
+                TextButton(
+                  onPressed:
+                      _isPosting ? null : () => Navigator.of(context).pop(),
+                  child:
+                      Text('Cancel', style: TextStyle(color: Colors.redAccent)),
                 ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel', style: TextStyle(color: Colors.redAccent)),
-            ),
-            TextButton(
-              onPressed: _post,
-              child: _isPosting
-                  ? CircularProgressIndicator()
-                  : Text('Post', style: TextStyle(color: Colors.green)),
-            ),
-          ],
+                TextButton(
+                  onPressed: _isPosting ? null : () => _post(setState),
+                  child: _isPosting
+                      ? CircularProgressIndicator()
+                      : Text('Post', style: TextStyle(color: Colors.green)),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  void _pickImage(ImageSource source) async {
+  void _pickImage(ImageSource source, StateSetter setState) async {
     final pickedFile = await ImagePicker().pickImage(source: source);
     if (pickedFile != null) {
       setState(() {
@@ -282,21 +287,20 @@ class _FeedTabState extends State<FeedTab> {
     }
   }
 
-  void _post() async {
+  void _post(StateSetter setState) async {
     if (_isPostingInProgress) {
       return;
     }
 
-    _isPostingInProgress = true;
-
     setState(() {
+      _isPostingInProgress = true;
       _isPosting = true;
     });
 
     var user = _auth.currentUser;
     if (user != null) {
       if (_titleController.text.trim().isEmpty) {
-        _enablePosting();
+        _enablePosting(setState);
         _clearPostingInProgress();
         showDialog(
           context: context,
@@ -332,7 +336,7 @@ class _FeedTabState extends State<FeedTab> {
         curve: Curves.easeInOut,
       );
     }
-    _enablePosting();
+    _enablePosting(setState);
     // Clear the flag
     _clearPostingInProgress();
   }
@@ -383,7 +387,7 @@ class _FeedTabState extends State<FeedTab> {
     _photoController.clear();
   }
 
-  void _enablePosting() {
+  void _enablePosting(StateSetter setState) {
     setState(() {
       _isPosting = false;
     });
