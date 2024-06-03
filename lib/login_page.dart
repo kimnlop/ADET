@@ -1,5 +1,4 @@
-// ignore_for_file: prefer_const_constructors, library_private_types_in_public_api, use_key_in_widget_constructors
-
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'registration_page.dart';
@@ -16,6 +15,15 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false; // Track loading state
   bool _passwordVisible = false; // Track password visibility
   String _emailError = ''; // Track email error
+  int _attempts = 0; // Track login attempts
+  bool _isCooldown = false; // Track if user is in cooldown period
+  Timer? _cooldownTimer; // Timer for cooldown period
+
+  @override
+  void dispose() {
+    _cooldownTimer?.cancel(); // Cancel the timer if the widget is disposed
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +55,7 @@ class _LoginPageState extends State<LoginPage> {
                           togglePasswordVisibility: _togglePasswordVisibility),
                       SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: _isLoading ? null : _login,
+                        onPressed: _isLoading || _isCooldown ? null : _login,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 9.0),
                           child: _isLoading
@@ -73,11 +81,17 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
-          if (_isLoading) // Show loader overlay if loading
+          if (_isLoading ||
+              _isCooldown) // Show loader overlay if loading or in cooldown
             Container(
               color: Colors.black.withOpacity(0.5),
               child: Center(
-                child: CircularProgressIndicator(),
+                child: _isLoading
+                    ? CircularProgressIndicator()
+                    : Text(
+                        'Too many attempts. Please wait 30 seconds.',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
               ),
             ),
         ],
@@ -141,18 +155,42 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await AuthService()
           .signIn(emailController.text.trim(), passwordController.text.trim());
+      // Reset attempts on successful login
+      setState(() {
+        _attempts = 0;
+      });
       // Navigate to the home screen if successful, and prevent back navigation to login
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => SuccessPage()));
     } catch (e) {
-      // Handle error, e.g., show error message
-      _showErrorDialog(
-          "Failed to login. Please check your credentials and try again.");
+      setState(() {
+        _attempts++;
+      });
+      if (_attempts >= 3) {
+        _startCooldown();
+      } else {
+        // Handle error, e.g., show error message
+        _showErrorDialog(
+            "Failed to login. Please check your credentials and try again.");
+      }
     } finally {
       setState(() {
         _isLoading = false; // Stop loading
       });
     }
+  }
+
+  void _startCooldown() {
+    setState(() {
+      _isCooldown = true;
+      _isLoading = false;
+    });
+    _cooldownTimer = Timer(Duration(seconds: 30), () {
+      setState(() {
+        _isCooldown = false;
+        _attempts = 0; // Reset attempts after cooldown
+      });
+    });
   }
 
   void _showErrorDialog(String message) {

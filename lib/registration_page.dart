@@ -1,4 +1,3 @@
-// ignore_for_file: prefer_const_constructors, library_private_types_in_public_api, use_key_in_widget_constructors, use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'database_service.dart';
@@ -68,7 +67,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         'Username',
                         TextInputType.text,
                         _nameError,
-                        RegExp(r'^[a-zA-Z0-9 ]+$'),
+                        RegExp(r'^[a-zA-Z0-9]+$'), // No spaces allowed
                       ),
                       SizedBox(height: 20),
                       _buildTextField(
@@ -166,7 +165,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
               )
             : null,
       ),
-      onChanged: (value) => _validateField(label, value),
+      onChanged: (value) {
+        if (label == 'Username') {
+          controller.text = value.replaceAll(' ', '');
+          controller.selection = TextSelection.fromPosition(
+              TextPosition(offset: controller.text.length));
+        }
+        _validateField(label, value);
+      },
     );
   }
 
@@ -178,9 +184,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
       } else if (label == 'Email') {
         _emailError = '';
       }
-      if (label == 'Name' && !RegExp(r'^[a-zA-Z0-9 ]+$').hasMatch(value)) {
-        _nameError = 'Invalid name format';
-      } else if (label == 'Name') {
+      if (label == 'Username' && !RegExp(r'^[a-zA-Z0-9]+$').hasMatch(value)) {
+        _nameError = 'Invalid username format';
+      } else if (label == 'Username') {
         _nameError = '';
       }
       if (label == 'Password') {
@@ -188,7 +194,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
             RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$').hasMatch(value);
         _passwordError = passwordValid
             ? ''
-            : 'Password must be at least 8 characters long and include a \nnumber';
+            : 'Password must be at least 8 characters long and include \na number';
       }
       if (label == 'Confirm Password' || label == 'Password') {
         _checkPasswordsMatch();
