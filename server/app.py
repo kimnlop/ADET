@@ -62,13 +62,13 @@ hair_type_mapping = {'Straight': 0, 'Wavy': 1, 'Curly': 2}
 hair_density_mapping = {'Thin': 0, 'Medium': 1, 'Thick': 2}
 
 def preprocess_input(data):
-    return [
-        gender_mapping[data['Gender Haircut']],
-        hair_length_mapping[data['Hair Length']],
-        face_shape_mapping[data['Face Shape']],
-        hair_type_mapping[data['Hair Type']],
-        hair_density_mapping[data['Hair Density']]
-    ]
+    return {
+        'Gender Haircut': gender_mapping[data['Gender Haircut']],
+        'Hair Length': hair_length_mapping[data['Hair Length']],
+        'Face Shape': face_shape_mapping[data['Face Shape']],
+        'Hair Type': hair_type_mapping[data['Hair Type']],
+        'Hair Density': hair_density_mapping[data['Hair Density']]
+    }
 
 # Prediction route
 @app.route('/predict', methods=['POST'])
@@ -78,8 +78,16 @@ def predict():
 
     try:
         data = request.json['features']
+
+        # Validate the input data
+        required_features = ['Gender Haircut', 'Hair Length', 'Face Shape', 'Hair Type', 'Hair Density']
+        for feature in required_features:
+            if feature not in data:
+                return jsonify({"error": f"Missing feature: {feature}"}), 400
+
         input_data = preprocess_input(data)
-        prediction = model.predict([input_data])
+        input_df = pd.DataFrame([input_data])  # Create a DataFrame with the input data
+        prediction = model.predict(input_df)
         return jsonify({"prediction": prediction.tolist()[0]})
     except Exception as e:
         app.logger.error(f"Error during prediction: {e}")

@@ -27,12 +27,12 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('Incomplete'),
-          content: Text('Please select all options.'),
+          title: const Text('Incomplete'),
+          content: const Text('Please select all options.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK'),
+              child: const Text('OK'),
             ),
           ],
         ),
@@ -60,12 +60,12 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('Recommended Haircut'),
+          title: const Text('Recommended Haircut'),
           content: Text(result['prediction']),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK'),
+              child: const Text('OK'),
             ),
           ],
         ),
@@ -74,12 +74,12 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('Error'),
-          content: Text('Failed to get recommendation.'),
+          title: const Text('Error'),
+          content: const Text('Failed to get recommendation.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK'),
+              child: const Text('OK'),
             ),
           ],
         ),
@@ -90,52 +90,130 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(options[_currentPage][0]), // Display the title
-      ),
-      body: PageView.builder(
-        controller: _pageController,
-        itemCount: options.length,
-        onPageChanged: (index) {
-          setState(() {
-            _currentPage = index;
-          });
-        },
-        itemBuilder: (context, index) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Column(
-                  children: List.generate(
-                    options[index].length - 1,
-                    (i) => RadioListTile<int>(
-                      title: Text(options[index][i + 1]), // Display choice
-                      value: i,
-                      groupValue: _selectedOptions[index],
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedOptions[index] = value!;
-                          if (index < options.length - 1) {
-                            _pageController.animateToPage(index + 1,
-                                duration: Duration(milliseconds: 500),
-                                curve: Curves.easeInOut);
-                          }
-                        });
-                      },
-                    ),
-                  ),
-                ),
-                if (index == options.length - 1)
-                  ElevatedButton(
-                    onPressed: _submit,
-                    child: Text('Get Recommendations'),
-                  ),
-              ],
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[100]
+                  ?.withOpacity(0.6), // Background with 60% opacity
             ),
-          );
-        },
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: options.length,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentPage = index;
+                });
+              },
+              itemBuilder: (context, index) {
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(height: 100), // Space for uniform alignment
+                    Center(
+                      child: Text(
+                        options[index][0],
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Color.fromRGBO(230, 72, 111, 1),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ...List.generate(
+                      options[index].length - 1,
+                      (i) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: InkWell(
+                          onTap: () {
+                            setState(() {
+                              _selectedOptions[index] = i;
+                              if (index < options.length - 1) {
+                                _pageController.animateToPage(index + 1,
+                                    duration: const Duration(milliseconds: 500),
+                                    curve: Curves.easeInOut);
+                              }
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: _selectedOptions[index] == i
+                                  ? const Color.fromRGBO(254, 173, 86, 0.1)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: _selectedOptions[index] == i
+                                    ? const Color.fromRGBO(230, 72, 111, 1)
+                                    : Colors.grey[300]!,
+                                width: 2,
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(16.0),
+                            child: Text(
+                              options[index][i + 1],
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Color.fromRGBO(230, 72, 111, 1),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (index == options.length - 1)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20.0),
+                        child: ElevatedButton(
+                          onPressed: _submit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                const Color.fromRGBO(230, 72, 111, 1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 16,
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Text(
+                            'Get Recommendations',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
+}
+
+void main() {
+  runApp(MaterialApp(
+    home: HaircutRecommenderTab(),
+    theme: ThemeData(
+      primarySwatch: Colors.deepPurple,
+      scaffoldBackgroundColor: Colors.grey[100],
+      textTheme: const TextTheme(
+        bodyText2: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+      ),
+    ),
+  ));
 }

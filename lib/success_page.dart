@@ -11,13 +11,12 @@ class SuccessPage extends StatefulWidget {
 }
 
 class _SuccessPageState extends State<SuccessPage> {
-  int _selectedIndex = 0; // Track selected tab index
+  int _selectedIndex = 0;
 
-  // Removed static keyword to ensure each instance of SuccessPage has its own widget list
   List<Widget> _widgetOptions = <Widget>[
-    FeedTab(), // Define your feed tab widget
-    HaircutRecommenderTab(), // Define your haircut recommender tab widget
-    MyAccountTab(), // Define your my account tab widget
+    FeedTab(),
+    HaircutRecommenderTab(),
+    MyAccountTab(),
   ];
 
   void _onItemTapped(int index) {
