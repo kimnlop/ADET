@@ -1,8 +1,9 @@
+// ignore_for_file: prefer_const_constructors, use_key_in_widget_constructors
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
-import 'dart:typed_data';
 import 'login_page.dart';
 
 class MyAccountTab extends StatelessWidget {
@@ -25,8 +26,36 @@ class MyAccountTab extends StatelessWidget {
     print('Current User ID: $userId'); // Debug print
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('My Account'),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(kToolbarHeight),
+        child: AppBar(
+          automaticallyImplyLeading: false, // Remove the back button
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(width: 50), // Adjust the width as needed
+              Image.asset(
+                'assets/crowdcutslogo2.png',
+                height: kToolbarHeight - 5, // Adjust as needed
+              ),
+            ],
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.logout),
+              onPressed: () {
+                FirebaseAuth.instance.signOut().then((value) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => LoginPage()),
+                    (Route<dynamic> route) => false,
+                  );
+                });
+              },
+            ),
+          ],
+          centerTitle: true,
+        ),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -89,25 +118,12 @@ class MyAccountTab extends StatelessWidget {
                     photoUrl: feedItemData['photoUrl'],
                   );
 
-                  return _buildFeedItem(feedItem);
+                  return _buildFeedItem(feedItem, context);
                 },
               );
             },
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'uniqueTag', // Give a unique tag or set to null
-        onPressed: () {
-          FirebaseAuth.instance.signOut().then((value) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => LoginPage()),
-              (Route<dynamic> route) => false,
-            );
-          });
-        },
-        child: Icon(Icons.logout),
       ),
     );
   }
@@ -118,48 +134,137 @@ class MyAccountTab extends StatelessWidget {
     return userDoc['userName'] ?? 'Unknown';
   }
 
-  Widget _buildFeedItem(FeedItem feedItem) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.5),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+  Widget _buildFeedItem(FeedItem feedItem, BuildContext context) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        bool isEditing = feedItem.isEditing;
+        TextEditingController titleController =
+            TextEditingController(text: feedItem.title);
+        TextEditingController descriptionController =
+            TextEditingController(text: feedItem.description);
+
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10.0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.5),
+                spreadRadius: 1,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (feedItem.photoUrl != null) _buildCachedImage(feedItem.photoUrl!),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  feedItem.title,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (feedItem.photoUrl != null)
+                _buildCachedImage(feedItem.photoUrl!),
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (isEditing)
+                          Expanded(
+                            child: TextField(
+                              controller: titleController,
+                              decoration: InputDecoration(
+                                labelText: 'Title',
+                                suffixIcon: feedItem.isPhotoModified
+                                    ? Text('Modified',
+                                        style: TextStyle(color: Colors.red))
+                                    : null,
+                              ),
+                            ),
+                          )
+                        else
+                          Row(
+                            children: [
+                              Text(
+                                feedItem.title,
+                                style: TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              if (feedItem.isPhotoModified)
+                                Text(
+                                  ' Modified',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                            ],
+                          ),
+                        PopupMenuButton<String>(
+                          onSelected: (value) {
+                            if (value == 'edit') {
+                              setState(() {
+                                feedItem.isEditing = true;
+                              });
+                            } else if (value == 'save') {
+                              _saveFeedItem(feedItem, titleController.text,
+                                  descriptionController.text);
+                              setState(() {
+                                feedItem.title = titleController.text;
+                                feedItem.description =
+                                    descriptionController.text;
+                                feedItem.isEditing = false;
+                              });
+                            } else if (value == 'delete') {
+                              _deleteFeedItem(feedItem.id);
+                            }
+                          },
+                          itemBuilder: (BuildContext context) {
+                            return [
+                              if (!isEditing)
+                                PopupMenuItem(
+                                  value: 'edit',
+                                  child: Text('Edit'),
+                                ),
+                              if (isEditing)
+                                PopupMenuItem(
+                                  value: 'save',
+                                  child: Text('Save'),
+                                ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text('Delete'),
+                              ),
+                            ];
+                          },
+                        ),
+                      ],
+                    ),
+                    if (isEditing)
+                      TextField(
+                        controller: descriptionController,
+                        decoration: InputDecoration(labelText: 'Description'),
+                      )
+                    else
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'by ${feedItem.userName}',
+                            style: TextStyle(fontSize: 10, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            feedItem.description,
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      ),
+                  ],
                 ),
-                Text(
-                  'by ${feedItem.userName}',
-                  style: TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  feedItem.description,
-                  style: TextStyle(fontSize: 16),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -174,9 +279,11 @@ class MyAccountTab extends StatelessWidget {
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('Error loading image'));
-          } else {
+          } else if (snapshot.hasData) {
             _imageCache[photoUrl] = snapshot.data!;
             return Image(image: snapshot.data!);
+          } else {
+            return Center(child: Text('No image available'));
           }
         },
       );
@@ -195,15 +302,36 @@ class MyAccountTab extends StatelessWidget {
       throw Exception('Failed to load image: $e');
     }
   }
+
+  Future<void> _saveFeedItem(
+      FeedItem feedItem, String newTitle, String newDescription) async {
+    await FirebaseFirestore.instance
+        .collection('feedItems')
+        .doc(feedItem.id)
+        .update({
+      'title': newTitle,
+      'description': newDescription,
+      // Add other fields to update as needed
+    });
+  }
+
+  void _deleteFeedItem(String feedItemId) async {
+    await FirebaseFirestore.instance
+        .collection('feedItems')
+        .doc(feedItemId)
+        .delete();
+  }
 }
 
 class FeedItem {
   final String id;
-  final String title;
-  final String description;
+  String title;
+  String description;
   final String userId;
   final String userName;
   final String? photoUrl;
+  bool isEditing = false;
+  bool isPhotoModified = false;
 
   FeedItem({
     required this.id,

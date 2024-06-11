@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_const_constructors, use_key_in_widget_constructors, library_private_types_in_public_api, prefer_final_fields, avoid_print
+// ignore_for_file: prefer_const_constructors, use_key_in_widget_constructors, library_private_types_in_public_api, prefer_final_fields, use_build_context_synchronously, avoid_print
 
 import 'dart:async';
 import 'dart:io';
@@ -69,6 +69,13 @@ class _FeedTabState extends State<FeedTab> {
     super.dispose();
   }
 
+  Future<void> _refreshFeed() async {
+    setState(() {
+      _feedItems.clear();
+    });
+    _subscribeToFeed();
+  }
+
   void _subscribeToFeed() {
     setState(() {
       _isLoading = true;
@@ -104,13 +111,16 @@ class _FeedTabState extends State<FeedTab> {
     return _isLoading
         ? Center(child: CircularProgressIndicator())
         : Scaffold(
-            body: ListView.builder(
-              controller: _scrollController,
-              itemCount: _feedItems.length,
-              itemBuilder: (context, index) {
-                var feedItem = _feedItems[index];
-                return _buildFeedItem(feedItem);
-              },
+            body: RefreshIndicator(
+              onRefresh: _refreshFeed,
+              child: ListView.builder(
+                controller: _scrollController,
+                itemCount: _feedItems.length,
+                itemBuilder: (context, index) {
+                  var feedItem = _feedItems[index];
+                  return _buildFeedItem(feedItem);
+                },
+              ),
             ),
             floatingActionButton: FloatingActionButton.extended(
               onPressed: _isPosting ? null : _showPostDialog,
@@ -282,7 +292,7 @@ class _FeedTabState extends State<FeedTab> {
     final pickedFile = await ImagePicker().pickImage(source: source);
     if (pickedFile != null) {
       setState(() {
-        _photoController.text = pickedFile.path!;
+        _photoController.text = pickedFile.path;
       });
     }
   }
@@ -372,13 +382,13 @@ class _FeedTabState extends State<FeedTab> {
   Future<String> _resolveAndroidContentUri(String uriString) async {
     final uri = Uri.parse(uriString);
     final filePath = uri.path;
-    return filePath!;
+    return filePath;
   }
 
   Future<String> _resolveIOSFilePath(String uriString) async {
     final uri = Uri.parse(uriString);
     final filePath = uri.path;
-    return filePath!;
+    return filePath;
   }
 
   void _clearControllers() {
