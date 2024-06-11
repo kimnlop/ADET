@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_const_constructors, library_private_types_in_public_api, use_key_in_widget_constructors, use_build_context_synchronously
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
@@ -71,7 +73,7 @@ class _LoginPageState extends State<LoginPage> {
                               MaterialPageRoute(
                                   builder: (context) => RegistrationPage()));
                         },
-                        child: Text("Don't have an account? Register",
+                        child: Text("Register",
                             style:
                                 TextStyle(fontSize: 16, color: Colors.white)),
                       ),
