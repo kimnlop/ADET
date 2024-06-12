@@ -1,5 +1,3 @@
-// ignore_for_file: prefer_const_constructors, use_build_context_synchronously, prefer_final_fields, use_key_in_widget_constructors, library_private_types_in_public_api, unused_field
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -22,6 +20,20 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
   ];
   List<int> _selectedOptions =
       List.filled(5, -1); // Initialize all selections as -1
+
+  List<List<String>> images = [
+    ["assets/male.jpg", "assets/female.jpg"],
+    ["assets/short.png", "assets/medium.png", "assets/long.png"],
+    [
+      "assets/oval.png",
+      "assets/round.png",
+      "assets/square.png",
+      "assets/heart.png",
+      "assets/diamond.png"
+    ],
+    ["assets/straight.png", "assets/wavy.png", "assets/curly.png"],
+    ["assets/thin.png", "assets/mediumDensity.png", "assets/thick.png"],
+  ];
 
   void _submit() async {
     if (_selectedOptions.contains(-1)) {
@@ -52,7 +64,7 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
     };
 
     final response = await http.post(
-      Uri.parse('http://192.168.100.7:5001/predict'),
+      Uri.parse('https://adetml.onrender.com/predict'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'features': data}),
     );
@@ -115,7 +127,21 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(height: 100), // Space for uniform alignment
+                    SizedBox(height: 50), // Space for uniform alignment
+                    if (index < options.length - 1)
+                      Container(
+                        height: 200,
+                        child: PageView.builder(
+                          itemCount: images[index].length,
+                          itemBuilder: (context, imageIndex) {
+                            return Image.asset(
+                              images[index][imageIndex],
+                              fit: BoxFit.cover,
+                            );
+                          },
+                        ),
+                      ),
+                    SizedBox(height: 20), // Space for uniform alignment
                     Center(
                       child: Text(
                         options[index][0],

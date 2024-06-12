@@ -41,4 +41,20 @@ flutter:
     - assets/crowdcutsbg.png
     - assets/crowdcutslogo.png
     - assets/crowdcutslogo2.png
+    - assets/male.jpg
+    - assets/female.jpg
+    - assets/short.png
+    - assets/medium.png
+    - assets/long.png
+    - assets/oval.png
+    - assets/round.png
+    - assets/square.png
+    - assets/heart.png
+    - assets/diamond.png
+    - assets/straight.png
+    - assets/wavy.png
+    - assets/curly.png
+    - assets/thin.png
+    - assets/mediumDensity.png
+    - assets/thick.png
   uses-material-design: true

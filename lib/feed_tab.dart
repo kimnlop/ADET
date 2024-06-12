@@ -1,5 +1,3 @@
-// ignore_for_file: prefer_const_constructors, use_key_in_widget_constructors, library_private_types_in_public_api, prefer_final_fields, use_build_context_synchronously, avoid_print
-
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -55,6 +53,7 @@ class _FeedTabState extends State<FeedTab> {
   bool _isPosting = false;
   bool _isPostingInProgress = false;
   bool _isLoading = true;
+  String _photoName = '';
 
   @override
   void initState() {
@@ -231,39 +230,43 @@ class _FeedTabState extends State<FeedTab> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  TextField(
-                    controller: _descriptionController,
-                    decoration: InputDecoration(
-                      hintText: 'Description',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
+                  Stack(
                     children: [
-                      Expanded(
-                        child: TextButton.icon(
-                          onPressed: () =>
-                              _pickImage(ImageSource.gallery, setState),
-                          icon: Icon(Icons.photo_library),
-                          label: Text('Choose Photo'),
+                      TextField(
+                        controller: _descriptionController,
+                        minLines: 3,
+                        maxLines: 5,
+                        decoration: InputDecoration(
+                          hintText: 'Description',
+                          border: OutlineInputBorder(),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextButton.icon(
-                          onPressed: () =>
-                              _pickImage(ImageSource.camera, setState),
-                          icon: Icon(Icons.camera_alt),
-                          label: Text('Take Photo'),
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: Row(
+                          children: [
+                            IconButton(
+                              onPressed: () =>
+                                  _pickImage(ImageSource.gallery, setState),
+                              icon: Icon(Icons.photo_library),
+                            ),
+                            IconButton(
+                              onPressed: () =>
+                                  _pickImage(ImageSource.camera, setState),
+                              icon: Icon(Icons.camera_alt),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
                   _photoController.text.isNotEmpty
-                      ? Text('Added image successfully',
-                          style: TextStyle(color: Colors.green))
+                      ? Text(
+                          _photoName,
+                          style: TextStyle(color: Colors.green),
+                        )
                       : SizedBox(),
                 ],
               ),
@@ -293,6 +296,7 @@ class _FeedTabState extends State<FeedTab> {
     if (pickedFile != null) {
       setState(() {
         _photoController.text = pickedFile.path;
+        _photoName = pickedFile.name;
       });
     }
   }
@@ -395,6 +399,7 @@ class _FeedTabState extends State<FeedTab> {
     _titleController.clear();
     _descriptionController.clear();
     _photoController.clear();
+    _photoName = '';
   }
 
   void _enablePosting(StateSetter setState) {

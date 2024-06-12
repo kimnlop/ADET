@@ -216,18 +216,27 @@ class _RegistrationPageState extends State<RegistrationPage> {
     });
 
     try {
+      final email = emailController.text.trim();
       final username = userNameController.text.trim().toLowerCase();
-      final isTaken = await DatabaseService().isUsernameTaken(username);
-      if (isTaken) {
+
+      // Check if the email is already taken
+      final isEmailTaken = await AuthService().checkUserExists(email);
+      if (isEmailTaken) {
+        throw 'Email is already taken';
+      }
+
+      // Check if the username is already taken
+      final isUsernameTaken = await DatabaseService().isUsernameTaken(username);
+      if (isUsernameTaken) {
         throw 'Username already taken';
       }
 
       final userCredential = await AuthService().signUp(
-        emailController.text.trim(),
+        email,
         passwordController.text.trim(),
       );
       await DatabaseService().addUser(userCredential.user!.uid, {
-        'email': emailController.text.trim(),
+        'email': email,
         'userName': username,
       });
 
