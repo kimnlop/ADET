@@ -191,10 +191,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
       }
       if (label == 'Password') {
         bool passwordValid =
-            RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$').hasMatch(value);
+            RegExp(r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$')
+                    .hasMatch(value) &&
+                value.replaceAll(RegExp(r'[^@$!%*?&]'), '').length == 1;
         _passwordError = passwordValid
             ? ''
-            : 'Password must be at least 8 characters long and include \na number';
+            : 'Password must be at least 8 characters long, include a \nnumber, and exactly one special character';
       }
       if (label == 'Confirm Password' || label == 'Password') {
         _checkPasswordsMatch();
@@ -240,9 +242,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
         'userName': username,
       });
 
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => SuccessPage()),
+        (Route<dynamic> route) => false,
       );
     } catch (e) {
       _showErrorDialog(e.toString());

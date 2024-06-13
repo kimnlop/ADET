@@ -58,6 +58,7 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
     "Blunt Bob with Thick Fringe": "assets/BluntBobwithThickFringe.jpg",
     "Slicked Back Undercut": "assets/SlickedBackUndercut.jpg",
     "Chin-Length Bob with Wave": "assets/Chin-LengthBobwithWave.jpg",
+    "Bro Flow": "assets/BroFlow.jpg"
   };
 
   void _submit() async {
