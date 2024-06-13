@@ -26,6 +26,7 @@ dependencies:
   intl: any
   flutter_localizations:
     sdk: flutter
+  flutter_secure_storage: ^9.2.2
 
 
 
@@ -41,8 +42,8 @@ flutter:
     - assets/crowdcutsbg.png
     - assets/crowdcutslogo.png
     - assets/crowdcutslogo2.png
-    - assets/male.jpg
-    - assets/female.jpg
+    - assets/male.png
+    - assets/female.png
     - assets/short.png
     - assets/medium.png
     - assets/long.png
@@ -57,4 +58,23 @@ flutter:
     - assets/thin.png
     - assets/mediumDensity.png
     - assets/thick.png
+    - assets/ClassicSidePart.jpg
+    - assets/AngledBobwithSoftFringe.jpg
+    - assets/BluntBobwithThickFringe.jpg
+    - assets/BroFlow.jpg
+    - assets/BuzzCutwithPrecisionFade.jpg
+    - assets/Chin-LengthBobwithWave.jpg
+    - assets/FullBodiedCurlswithLayers.jpg
+    - assets/GrownOutLayerswithTexture.jpg
+    - assets/LayeredLobwithFace-FramingBangs.jpg
+    - assets/LongCascadingLayers.jpg
+    - assets/Mid-LengthCutwithDynamicLayers.jpg
+    - assets/PompadourFade.jpg
+    - assets/ShortPixiewithTexturedLayers.jpg
+    - assets/SlickedBackUndercut.jpg
+    - assets/SurferShag.jpg
+    - assets/TexturedQuiff.jpg
+    - assets/TousledTopwithThinLayers.jpg
+    - assets/VoluminousWavswithDeepLayers.jpg
+
   uses-material-design: true

@@ -5,6 +5,11 @@ class AuthService {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  AuthService() {
+    // Ensure the persistence is set to LOCAL
+    _firebaseAuth.setPersistence(Persistence.LOCAL);
+  }
+
   Future<UserCredential> signIn(String email, String password) async {
     return await _firebaseAuth.signInWithEmailAndPassword(
         email: email, password: password);

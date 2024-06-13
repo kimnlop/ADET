@@ -1,8 +1,9 @@
-// main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'login_page.dart';
+import 'success_page.dart'; // Import SuccessPage
+import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +21,27 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: LoginPage(),
+      home: AuthWrapper(),
+    );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasData) {
+          return SuccessPage(); // User is logged in
+        }
+        return LoginPage(); // User is not logged in
+      },
     );
   }
 }

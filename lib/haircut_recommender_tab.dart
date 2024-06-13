@@ -22,7 +22,7 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
       List.filled(5, -1); // Initialize all selections as -1
 
   List<List<String>> images = [
-    ["assets/male.jpg", "assets/female.jpg"],
+    ["assets/male.png", "assets/female.png"],
     ["assets/short.png", "assets/medium.png", "assets/long.png"],
     [
       "assets/oval.png",
@@ -34,6 +34,31 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
     ["assets/straight.png", "assets/wavy.png", "assets/curly.png"],
     ["assets/thin.png", "assets/mediumDensity.png", "assets/thick.png"],
   ];
+
+  // Mapping from prediction responses to images
+  Map<String, String> predictionImageMap = {
+    "Classic Side Part": "assets/ClassicSidePart.jpg",
+    "Tousled Top with Thin Layers": "assets/TousledTopwithThinLayers.jpg",
+    "Long Cascading Layers": "assets/LongCascadingLayers.jpg",
+    "Textured Quiff": "assets/TexturedQuiff.jpg",
+    "Buzz Cut with Precision Fade": "assets/BuzzCutwithPrecisionFade.jpg",
+    "Pompadour Fade": "assets/PompadourFade.jpg",
+    "Angled Bob with Soft Fringe": "assets/AngledBobwithSoftFringe.jpg",
+    "Surfer Shag": "SurferShag.jpg",
+    "Voluminous Waves with Deep Layers":
+        "assets/VoluminousWaveswithDeepLayers.jpg",
+    "Full Bodied Curls with Layers": "assets/FullBodiedCurlswithLayers.jpg",
+    "Grown Out Layers with Texture": "assets/GrownOutLayerswithTexture.jpg",
+    "Mid-Length Cut with Dynamic Layers":
+        "assets/Mid-LengthCutwithDynamicLayers.jpg",
+    "Layered Lob with Face-Framing Bangs":
+        "assets/LayeredLobwithFace-FramingBangs.jpg",
+    "Short Pixie with Textured Layers":
+        "assets/ShortPixiewithTexturedLayers.jpg",
+    "Blunt Bob with Thick Fringe": "assets/BluntBobwithThickFringe.jpg",
+    "Slicked Back Undercut": "assets/SlickedBackUndercut.jpg",
+    "Chin-Length Bob with Wave": "assets/Chin-LengthBobwithWave.jpg",
+  };
 
   void _submit() async {
     if (_selectedOptions.contains(-1)) {
@@ -71,11 +96,20 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
 
     if (response.statusCode == 200) {
       final result = json.decode(response.body);
+      String prediction = result['prediction'];
+      String? imagePath = predictionImageMap[prediction];
+
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Recommended Haircut'),
-          content: Text(result['prediction']),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(prediction),
+              if (imagePath != null) Image.asset(imagePath),
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
