@@ -1,3 +1,5 @@
+// ignore_for_file: use_key_in_widget_constructors, prefer_const_constructors, library_private_types_in_public_api, prefer_final_fields, use_build_context_synchronously, avoid_print
+
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';

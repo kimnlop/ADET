@@ -1,7 +1,7 @@
+// ignore_for_file: library_private_types_in_public_api, use_key_in_widget_constructors, prefer_final_fields, use_build_context_synchronously
+
 import 'dart:async';
-import 'package:CrowdCuts/login_page.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 
@@ -11,7 +11,6 @@ class AdminPage extends StatefulWidget {
 }
 
 class _AdminPageState extends State<AdminPage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ScrollController _scrollController = ScrollController();
   late StreamSubscription<QuerySnapshot> _feedSubscription;
@@ -74,16 +73,16 @@ class _AdminPageState extends State<AdminPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Confirm Deletion'),
-          content: Text('Are you sure you want to delete this post?'),
+          title: const Text('Confirm Deletion'),
+          content: const Text('Are you sure you want to delete this post?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: Text('Delete', style: TextStyle(color: Colors.red)),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -96,7 +95,7 @@ class _AdminPageState extends State<AdminPage> {
         _feedItems.remove(feedItem);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Post has been deleted successfully')),
+        const SnackBar(content: Text('Post has been deleted successfully')),
       );
     }
   }
@@ -105,7 +104,7 @@ class _AdminPageState extends State<AdminPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _refreshFeed,
               child: ListView.builder(
@@ -146,21 +145,22 @@ class _AdminPageState extends State<AdminPage> {
               children: [
                 Text(
                   feedItem.title,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   'by ${feedItem.userName}',
-                  style: TextStyle(fontSize: 10, color: Colors.grey),
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   feedItem.description,
-                  style: TextStyle(fontSize: 16),
+                  style: const TextStyle(fontSize: 16),
                 ),
                 Align(
                   alignment: Alignment.centerRight,
                   child: IconButton(
-                    icon: Icon(Icons.delete, color: Colors.red),
+                    icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: () => _deletePost(feedItem),
                   ),
                 ),
@@ -180,9 +180,9 @@ class _AdminPageState extends State<AdminPage> {
         future: _loadImage(photoUrl),
         builder: (context, AsyncSnapshot<ImageProvider> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error loading image'));
+            return const Center(child: Text('Error loading image'));
           } else {
             _imageCache[photoUrl] = snapshot.data!;
             return Image(image: snapshot.data!);
