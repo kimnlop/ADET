@@ -1,4 +1,3 @@
-// database_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DatabaseService {
@@ -21,6 +20,20 @@ class DatabaseService {
     } catch (e) {
       print('Error checking username availability: $e');
       return false; // Return false in case of any error
+    }
+  }
+
+  Future<bool> checkUserExists(String email) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+      return querySnapshot.docs.isNotEmpty;
+    } catch (e) {
+      print('Error checking user existence: $e');
+      return false;
     }
   }
 }

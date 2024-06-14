@@ -26,37 +26,6 @@ class MyAccountTab extends StatelessWidget {
     print('Current User ID: $userId'); // Debug print
 
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(kToolbarHeight),
-        child: AppBar(
-          automaticallyImplyLeading: false, // Remove the back button
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(width: 50), // Adjust the width as needed
-              Image.asset(
-                'assets/crowdcutslogo2.png',
-                height: kToolbarHeight - 5, // Adjust as needed
-              ),
-            ],
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.logout),
-              onPressed: () {
-                FirebaseAuth.instance.signOut().then((value) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => LoginPage()),
-                    (Route<dynamic> route) => false,
-                  );
-                });
-              },
-            ),
-          ],
-          centerTitle: true,
-        ),
-      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('feedItems')

@@ -6,7 +6,6 @@ class AuthService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   AuthService() {
-    // Ensure the persistence is set to LOCAL
     _firebaseAuth.setPersistence(Persistence.LOCAL);
   }
 
@@ -16,8 +15,15 @@ class AuthService {
   }
 
   Future<UserCredential> signUp(String email, String password) async {
-    return await _firebaseAuth.createUserWithEmailAndPassword(
-        email: email, password: password);
+    UserCredential userCredential = await _firebaseAuth
+        .createUserWithEmailAndPassword(email: email, password: password);
+    await _firestore.collection('users').doc(userCredential.user!.uid).set({
+      'email': email,
+      'userName': email.split('@')[0], // Default username based on email
+      'role': 0, // Default role is 0 for non-admin
+      'disabled': false, // Initially set account as not disabled
+    });
+    return userCredential;
   }
 
   Future<bool> checkUserExists(String email) async {
@@ -27,12 +33,49 @@ class AuthService {
           .where('email', isEqualTo: email)
           .limit(1)
           .get();
-
       return querySnapshot.docs.isNotEmpty;
     } catch (e) {
-      // Handle errors, e.g., log the error
       print('Error checking user existence: $e');
       return false;
     }
+  }
+
+  Future<bool> isAdmin() async {
+    User? user = _firebaseAuth.currentUser;
+    if (user != null) {
+      DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(user.uid).get();
+      if (userDoc.exists) {
+        Map<String, dynamic> data = userDoc.data() as Map<String, dynamic>;
+        return data['role'] == 1;
+      }
+    }
+    return false;
+  }
+
+  Future<void> disableAccount(String userId) async {
+    await _firestore.collection('users').doc(userId).update({
+      'disabled': true,
+    });
+  }
+
+  Future<void> enableAccount(String userId) async {
+    await _firestore.collection('users').doc(userId).update({
+      'disabled': false,
+    });
+  }
+
+  Future<bool> isAccountDisabled(String userId) async {
+    DocumentSnapshot userDoc =
+        await _firestore.collection('users').doc(userId).get();
+    if (userDoc.exists) {
+      Map<String, dynamic> data = userDoc.data() as Map<String, dynamic>;
+      return data['disabled'] ?? false;
+    }
+    return false; // Default to false if document not found or disabled field doesn't exist
+  }
+
+  Future<void> signOut() async {
+    await _firebaseAuth.signOut();
   }
 }

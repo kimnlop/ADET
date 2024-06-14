@@ -240,6 +240,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
       await DatabaseService().addUser(userCredential.user!.uid, {
         'email': email,
         'userName': username,
+        'role': 0,
       });
 
       Navigator.pushAndRemoveUntil(
