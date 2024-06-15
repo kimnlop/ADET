@@ -67,6 +67,7 @@ class _SuccessPageState extends State<SuccessPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Color.fromARGB(211, 255, 255, 255), // Dark gray color
         automaticallyImplyLeading: false, // Hide back button
         title: Row(
           children: [
@@ -125,6 +126,7 @@ class _SuccessPageState extends State<SuccessPage> {
               child: CircularProgressIndicator(),
             ), // Show loader until tabs are set
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Color.fromARGB(211, 255, 255, 255),
         items: _isAdmin
             ? const <BottomNavigationBarItem>[
                 BottomNavigationBarItem(
@@ -142,8 +144,8 @@ class _SuccessPageState extends State<SuccessPage> {
                   label: 'Feed',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.search),
-                  label: 'Haircut Recommender',
+                  icon: Icon(Icons.cut),
+                  label: 'Haircut',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.account_circle),
@@ -151,9 +153,11 @@ class _SuccessPageState extends State<SuccessPage> {
                 ),
               ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.green,
+        selectedItemColor: Color.fromRGBO(230, 72, 111, 1),
+        unselectedItemColor: Colors.black,
         onTap: _onItemTapped,
       ),
+      backgroundColor: Color.fromARGB(211, 255, 255, 255),
     );
   }
 }

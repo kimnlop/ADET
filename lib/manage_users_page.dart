@@ -1,6 +1,4 @@
-// manage_users_page.dart
-
-// ignore_for_file: use_key_in_widget_constructors, library_private_types_in_public_api, prefer_const_constructors, use_build_context_synchronously
+// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -14,7 +12,11 @@ class ManageUsersPage extends StatefulWidget {
 class _ManageUsersPageState extends State<ManageUsersPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<UserItem> _users = [];
+  List<UserItem> _filteredUsers = [];
   bool _isLoading = true;
+  int _currentPage = 1;
+  final int _usersPerPage = 10;
+  TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -32,9 +34,26 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
       return UserItem.fromSnapshot(doc);
     }).toList();
 
+    users.sort((a, b) => a.userName.compareTo(b.userName));
+
+    if (mounted) {
+      setState(() {
+        _users = users;
+        _filteredUsers = users;
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _filterUsers(String query) {
+    List<UserItem> filteredList = _users.where((user) {
+      return user.userName.toLowerCase().contains(query.toLowerCase()) ||
+          user.email.toLowerCase().contains(query.toLowerCase());
+    }).toList();
+
     setState(() {
-      _users = users;
-      _isLoading = false;
+      _filteredUsers = filteredList;
+      _currentPage = 1;
     });
   }
 
@@ -82,65 +101,149 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
     );
   }
 
+  void _nextPage() {
+    setState(() {
+      if (_currentPage * _usersPerPage < _filteredUsers.length) {
+        _currentPage++;
+      }
+    });
+  }
+
+  void _previousPage() {
+    setState(() {
+      if (_currentPage > 1) {
+        _currentPage--;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    int startIndex = (_currentPage - 1) * _usersPerPage;
+    int endIndex = startIndex + _usersPerPage;
+    List<UserItem> paginatedUsers = _filteredUsers.sublist(
+      startIndex,
+      endIndex > _filteredUsers.length ? _filteredUsers.length : endIndex,
+    );
+    int totalPages = (_filteredUsers.length / _usersPerPage).ceil();
+
     return Scaffold(
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _users.length,
-              itemBuilder: (context, index) {
-                var userItem = _users[index];
-                return Card(
-                  margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          userItem.userName,
-                          style: TextStyle(
-                            fontSize: 18.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 8.0),
-                        Text(
-                          userItem.email,
-                          style: TextStyle(
-                            fontSize: 16.0,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        SizedBox(height: 16.0),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: () =>
-                                  _viewAccount(userItem.id, userItem.userName),
-                              icon: Icon(Icons.remove_red_eye),
-                              label: Text('View Account'),
-                            ),
-                            SizedBox(width: 8.0),
-                            ElevatedButton.icon(
-                              onPressed: () =>
-                                  _confirmDisableAccount(userItem.id),
-                              icon: Icon(Icons.block, color: Colors.white),
-                              label: Text('Disable Account'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Search',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.search),
+              ),
+              onChanged: _filterUsers,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Username',
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                );
-              },
+                ),
+                Expanded(
+                  child: Text(
+                    'Email',
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 48), // Space for View Account button
+                SizedBox(width: 48), // Space for Disable Account button
+              ],
             ),
+          ),
+          Divider(),
+          _isLoading
+              ? Center(child: CircularProgressIndicator())
+              : Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          padding: EdgeInsets.all(8.0),
+                          itemCount: paginatedUsers.length,
+                          itemBuilder: (context, index) {
+                            var userItem = paginatedUsers[index];
+                            return Card(
+                              margin: EdgeInsets.symmetric(vertical: 8.0),
+                              elevation: 4.0,
+                              child: ListTile(
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 16.0, vertical: 8.0),
+                                title: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        userItem.userName,
+                                        style: TextStyle(
+                                          fontSize: 15.0,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        userItem.email,
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.remove_red_eye),
+                                      onPressed: () => _viewAccount(
+                                          userItem.id, userItem.userName),
+                                    ),
+                                    IconButton(
+                                      icon:
+                                          Icon(Icons.block, color: Colors.red),
+                                      onPressed: () =>
+                                          _confirmDisableAccount(userItem.id),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.arrow_left),
+                            onPressed: _previousPage,
+                          ),
+                          Text('$_currentPage / $totalPages'),
+                          IconButton(
+                            icon: Icon(Icons.arrow_right),
+                            onPressed: _nextPage,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+        ],
+      ),
     );
   }
 }

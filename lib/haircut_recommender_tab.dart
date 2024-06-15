@@ -1,5 +1,3 @@
-// ignore_for_file: library_private_types_in_public_api, use_key_in_widget_constructors, unused_field, prefer_final_fields, use_build_context_synchronously, prefer_const_constructors, deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -12,6 +10,9 @@ class HaircutRecommenderTab extends StatefulWidget {
 class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
   PageController _pageController = PageController();
   int _currentPage = 0;
+  int _currentImageIndex = 0;
+  List<PageController> _imageControllers = [];
+
   List<List<String>> options = [
     ['Gender Haircut', 'Male', 'Female'],
     ['Hair Length', 'Short', 'Medium', 'Long'],
@@ -62,6 +63,21 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
     "Chin-Length Bob with Wave": "assets/Chin-LengthBobwithWave.jpg",
     "Bro Flow": "assets/BroFlow.jpg"
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _imageControllers = List.generate(images.length, (_) => PageController());
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    for (var controller in _imageControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
 
   void _submit() async {
     if (_selectedOptions.contains(-1)) {
@@ -144,10 +160,7 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
       body: Stack(
         children: [
           Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[100]
-                  ?.withOpacity(0.6), // Background with 60% opacity
-            ),
+            decoration: BoxDecoration(),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -157,6 +170,7 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
               onPageChanged: (index) {
                 setState(() {
                   _currentPage = index;
+                  _currentImageIndex = 0; // Reset image index when page changes
                 });
               },
               itemBuilder: (context, index) {
@@ -166,17 +180,67 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
                   children: [
                     SizedBox(height: 50), // Space for uniform alignment
                     if (index < options.length - 1)
-                      Container(
-                        height: 200,
-                        child: PageView.builder(
-                          itemCount: images[index].length,
-                          itemBuilder: (context, imageIndex) {
-                            return Image.asset(
-                              images[index][imageIndex],
-                              fit: BoxFit.cover,
-                            );
-                          },
-                        ),
+                      Stack(
+                        children: [
+                          Container(
+                            height: 200,
+                            child: PageView.builder(
+                              controller: _imageControllers[index],
+                              onPageChanged: (imageIndex) {
+                                setState(() {
+                                  _currentImageIndex = imageIndex;
+                                });
+                              },
+                              itemCount: images[index].length,
+                              itemBuilder: (context, imageIndex) {
+                                return Card(
+                                  elevation: 4.0,
+                                  margin: EdgeInsets.all(8.0),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.asset(
+                                      images[index][imageIndex],
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          if (_currentImageIndex > 0)
+                            Positioned(
+                              left: 8.0,
+                              top: 0.0,
+                              bottom: 0.0,
+                              child: IconButton(
+                                icon: Icon(Icons.arrow_back),
+                                onPressed: () {
+                                  _imageControllers[index].previousPage(
+                                    duration: Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                },
+                              ),
+                            ),
+                          if (_currentImageIndex < images[index].length - 1)
+                            Positioned(
+                              right: 8.0,
+                              top: 0.0,
+                              bottom: 0.0,
+                              child: IconButton(
+                                icon: Icon(Icons.arrow_forward),
+                                onPressed: () {
+                                  _imageControllers[index].nextPage(
+                                    duration: Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                },
+                              ),
+                            ),
+                        ],
                       ),
                     SizedBox(height: 20), // Space for uniform alignment
                     Center(

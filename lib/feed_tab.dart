@@ -226,6 +226,7 @@ class _FeedTabState extends State<FeedTab> {
                 children: [
                   TextField(
                     controller: _titleController,
+                    maxLength: 20, // Limit title to 20 characters
                     decoration: InputDecoration(
                       hintText: 'Title',
                       border: OutlineInputBorder(),

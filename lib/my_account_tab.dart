@@ -1,5 +1,3 @@
-// ignore_for_file: prefer_const_constructors, use_key_in_widget_constructors, avoid_print
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -22,18 +20,15 @@ class MyAccountTab extends StatelessWidget {
 
     final String userId = currentUser.uid;
 
-    print('Current User ID: $userId'); // Debug print
-
     return Scaffold(
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('feedItems')
-            .where('userId', isEqualTo: userId) // Ensure this field is correct
-            .orderBy('uploadDate', descending: true) // Sort by uploadDate
+            .where('userId', isEqualTo: userId)
+            .orderBy('uploadDate', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            print('Error fetching feed items: ${snapshot.error}');
             return Center(child: Text('Error loading feed items'));
           }
 
@@ -42,7 +37,6 @@ class MyAccountTab extends StatelessWidget {
           }
 
           final feedItems = snapshot.data!.docs;
-          print('Fetched ${feedItems.length} items'); // Debug print
 
           if (feedItems.isEmpty) {
             return Center(child: Text('No feed items found'));
@@ -58,8 +52,6 @@ class MyAccountTab extends StatelessWidget {
                 future: _fetchUserName(feedItemData['userId']),
                 builder: (context, userNameSnapshot) {
                   if (userNameSnapshot.hasError) {
-                    print(
-                        'Error fetching user name: ${userNameSnapshot.error}');
                     return ListTile(
                       title: Text(feedItemData['title'] ?? 'No Title'),
                       subtitle:
@@ -79,8 +71,8 @@ class MyAccountTab extends StatelessWidget {
 
                   var feedItem = FeedItem(
                     id: feedItems[index].id,
-                    title: feedItemData['title'],
-                    description: feedItemData['description'],
+                    title: feedItemData['title'] ?? 'Untitled',
+                    description: feedItemData['description'] ?? '',
                     userId: feedItemData['userId'],
                     userName: userNameSnapshot.data!,
                     photoUrl: feedItemData['photoUrl'],
@@ -142,29 +134,23 @@ class MyAccountTab extends StatelessWidget {
                           Expanded(
                             child: TextField(
                               controller: titleController,
+                              maxLength: 20,
+                              maxLines: 1,
                               decoration: InputDecoration(
                                 labelText: 'Title',
-                                suffixIcon: feedItem.isPhotoModified
-                                    ? Text('Modified',
-                                        style: TextStyle(color: Colors.red))
+                                errorText: titleController.text.trim().isEmpty
+                                    ? 'Title cannot be empty'
                                     : null,
                               ),
                             ),
                           )
                         else
-                          Row(
-                            children: [
-                              Text(
-                                feedItem.title,
-                                style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold),
-                              ),
-                              if (feedItem.isPhotoModified)
-                                Text(
-                                  ' Modified',
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                            ],
+                          Expanded(
+                            child: Text(
+                              feedItem.title,
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
                           ),
                         PopupMenuButton<String>(
                           onSelected: (value) {
@@ -173,14 +159,24 @@ class MyAccountTab extends StatelessWidget {
                                 feedItem.isEditing = true;
                               });
                             } else if (value == 'save') {
-                              _saveFeedItem(feedItem, titleController.text,
-                                  descriptionController.text);
-                              setState(() {
-                                feedItem.title = titleController.text;
-                                feedItem.description =
-                                    descriptionController.text;
-                                feedItem.isEditing = false;
-                              });
+                              if (titleController.text.trim().isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'Title cannot be empty or spaces only. Please provide a valid title.'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              } else {
+                                _saveFeedItem(feedItem, titleController.text,
+                                    descriptionController.text);
+                                setState(() {
+                                  feedItem.title = titleController.text;
+                                  feedItem.description =
+                                      descriptionController.text;
+                                  feedItem.isEditing = false;
+                                });
+                              }
                             } else if (value == 'delete') {
                               _deleteFeedItem(feedItem.id);
                             }
@@ -209,7 +205,10 @@ class MyAccountTab extends StatelessWidget {
                     if (isEditing)
                       TextField(
                         controller: descriptionController,
-                        decoration: InputDecoration(labelText: 'Description'),
+                        maxLines: null,
+                        decoration: InputDecoration(
+                          labelText: 'Description',
+                        ),
                       )
                     else
                       Column(
@@ -279,7 +278,6 @@ class MyAccountTab extends StatelessWidget {
         .update({
       'title': newTitle,
       'description': newDescription,
-      // Add other fields to update as needed
     });
   }
 
@@ -299,7 +297,6 @@ class FeedItem {
   final String userName;
   final String? photoUrl;
   bool isEditing = false;
-  bool isPhotoModified = false;
 
   FeedItem({
     required this.id,
