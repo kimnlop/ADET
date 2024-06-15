@@ -216,7 +216,8 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
                               top: 0.0,
                               bottom: 0.0,
                               child: IconButton(
-                                icon: Icon(Icons.arrow_back),
+                                icon: Icon(Icons.arrow_back,
+                                    color: Color(0xFF50727B)),
                                 onPressed: () {
                                   _imageControllers[index].previousPage(
                                     duration: Duration(milliseconds: 300),
@@ -231,7 +232,8 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
                               top: 0.0,
                               bottom: 0.0,
                               child: IconButton(
-                                icon: Icon(Icons.arrow_forward),
+                                icon: Icon(Icons.arrow_forward,
+                                    color: Color(0xFF50727B)),
                                 onPressed: () {
                                   _imageControllers[index].nextPage(
                                     duration: Duration(milliseconds: 300),
@@ -249,7 +251,7 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(230, 72, 111, 1),
+                          color: Color(0xFF50727B),
                         ),
                       ),
                     ),
@@ -272,12 +274,12 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
                           child: Container(
                             decoration: BoxDecoration(
                               color: _selectedOptions[index] == i
-                                  ? const Color.fromRGBO(254, 173, 86, 0.1)
+                                  ? const Color.fromRGBO(120, 160, 131, 0.1)
                                   : Colors.white,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color: _selectedOptions[index] == i
-                                    ? const Color.fromRGBO(230, 72, 111, 1)
+                                    ? const Color(0xFF50727B)
                                     : Colors.grey[300]!,
                                 width: 2,
                               ),
@@ -288,7 +290,7 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
-                                color: Color.fromRGBO(230, 72, 111, 1),
+                                color: Color(0xFF50727B),
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -302,8 +304,7 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
                         child: ElevatedButton(
                           onPressed: _submit,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                const Color.fromRGBO(230, 72, 111, 1),
+                            backgroundColor: const Color(0xFF50727B),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 32,
                               vertical: 16,
@@ -338,10 +339,13 @@ void main() {
   runApp(MaterialApp(
     home: HaircutRecommenderTab(),
     theme: ThemeData(
-      primarySwatch: Colors.deepPurple,
-      scaffoldBackgroundColor: Colors.grey[100],
+      primarySwatch: Colors.blueGrey,
+      scaffoldBackgroundColor: Color(0xFF344955),
       textTheme: const TextTheme(
-        bodyText2: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        bodyText2: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFFE6E6E6)),
       ),
     ),
   ));

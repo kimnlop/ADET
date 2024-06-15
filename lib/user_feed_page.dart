@@ -1,7 +1,3 @@
-// user_feed_page.dart
-
-// ignore_for_file: use_key_in_widget_constructors, prefer_const_constructors_in_immutables, prefer_const_constructors, use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -20,8 +16,7 @@ class UserFeedPage extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('feedItems')
-            .where('userId',
-                isEqualTo: userId) // Fetch feed items for the specific user
+            .where('userId', isEqualTo: userId)
             .orderBy('uploadDate', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
@@ -63,33 +58,19 @@ class UserFeedPage extends StatelessWidget {
   }
 
   void _deletePost(BuildContext context, FeedItem feedItem) async {
-    bool confirmDelete = await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Confirm Deletion'),
-          content: Text('Are you sure you want to delete this post?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text('Delete', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmDelete) {
+    try {
       await FirebaseFirestore.instance
           .collection('feedItems')
           .doc(feedItem.id)
           .delete();
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Post has been deleted successfully')),
+      );
+    } catch (e) {
+      print('Failed to delete post: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete post')),
       );
     }
   }
@@ -129,7 +110,7 @@ class UserFeedPage extends StatelessWidget {
                     PopupMenuButton<String>(
                       onSelected: (value) {
                         if (value == 'delete') {
-                          _deletePost(context, feedItem);
+                          _showDeleteDialog(context, feedItem);
                         }
                       },
                       itemBuilder: (BuildContext context) {
@@ -157,6 +138,55 @@ class UserFeedPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, FeedItem feedItem) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: Row(
+            children: [
+              Text(
+                "Confirm Deletion",
+                style: TextStyle(color: Color(0xFF50727B)),
+              ),
+            ],
+          ),
+          content: Text('Are you sure you want to delete this post?'),
+          actions: [
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Color(0xFF50727B),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Color.fromARGB(255, 142, 33, 25),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                _deletePost(context, feedItem);
+              },
+              child: Text('Delete'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

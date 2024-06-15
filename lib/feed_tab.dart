@@ -126,10 +126,10 @@ class _FeedTabState extends State<FeedTab> {
             floatingActionButton: FloatingActionButton.extended(
               onPressed: _isPosting ? null : _showPostDialog,
               label: Text('Create Post',
-                  style: TextStyle(color: const Color.fromRGBO(1, 67, 115, 1))),
+                  style: TextStyle(color: Color.fromARGB(255, 255, 255, 255))),
               icon: Icon(Icons.add,
-                  size: 24, color: const Color.fromRGBO(254, 173, 86, 1)),
-              backgroundColor: const Color.fromRGBO(230, 72, 111, 1),
+                  size: 24, color: Color.fromARGB(255, 0, 255, 17)),
+              backgroundColor: const Color(0xFF50727B),
             ),
           );
   }

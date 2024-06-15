@@ -1,4 +1,4 @@
-// ignore_for_file: library_private_types_in_public_api, use_key_in_widget_constructors, prefer_final_fields, prefer_const_constructors
+// ignore_for_file: library_private_types_in_public_api, use_key_in_widget_constructors, prefer_final_fields, prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +19,7 @@ class _SuccessPageState extends State<SuccessPage> {
   int _selectedIndex = 0;
   bool _isAdmin = false;
   AuthService _authService = AuthService();
+  List<Widget> _widgetOptions = <Widget>[]; // Initialize empty
 
   @override
   void initState() {
@@ -28,29 +29,31 @@ class _SuccessPageState extends State<SuccessPage> {
 
   Future<void> _checkAdminStatus() async {
     bool isAdmin = await _authService.isAdmin();
-    setState(() {
-      _isAdmin = isAdmin;
-      if (_isAdmin) {
-        _widgetOptions = <Widget>[
-          AdminPage(),
-          ManageUsersPage(),
-        ];
-      } else {
-        _widgetOptions = <Widget>[
-          FeedTab(),
-          HaircutRecommenderTab(),
-          MyAccountTab(),
-        ];
-      }
-    });
+    if (mounted) {
+      setState(() {
+        _isAdmin = isAdmin;
+        if (_isAdmin) {
+          _widgetOptions = <Widget>[
+            AdminPage(),
+            ManageUsersPage(),
+          ];
+        } else {
+          _widgetOptions = <Widget>[
+            FeedTab(),
+            HaircutRecommenderTab(),
+            MyAccountTab(),
+          ];
+        }
+      });
+    }
   }
 
-  List<Widget> _widgetOptions = <Widget>[]; // Initialize empty
-
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    if (mounted) {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
   }
 
   void _logout() {
@@ -88,23 +91,48 @@ class _SuccessPageState extends State<SuccessPage> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: Icon(Icons.logout, color: Color(0xFF50727B)),
             onPressed: () {
               showDialog(
                 context: context,
                 builder: (BuildContext context) {
                   return AlertDialog(
-                    title: Text("Confirm Logout"),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    title: Row(
+                      children: [
+                        Text(
+                          "Confirm Logout",
+                          style: TextStyle(color: Color(0xFF50727B)),
+                        ),
+                      ],
+                    ),
                     content: Text("Are you sure you want to logout?"),
                     actions: <Widget>[
                       TextButton(
                         child: Text("Cancel"),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: Color(0xFF50727B),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                         onPressed: () {
                           Navigator.of(context).pop();
                         },
                       ),
                       TextButton(
                         child: Text("Yes"),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor:
+                              const Color.fromARGB(255, 142, 33, 25),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                         onPressed: () {
                           _logout();
                         },
@@ -131,7 +159,7 @@ class _SuccessPageState extends State<SuccessPage> {
             ? const <BottomNavigationBarItem>[
                 BottomNavigationBarItem(
                   icon: Icon(Icons.admin_panel_settings),
-                  label: 'Admin',
+                  label: 'Admin Feed',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.people),
@@ -153,8 +181,8 @@ class _SuccessPageState extends State<SuccessPage> {
                 ),
               ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Color.fromRGBO(230, 72, 111, 1),
-        unselectedItemColor: Colors.black,
+        selectedItemColor: Color(0xFF50727B),
+        unselectedItemColor: const Color.fromARGB(255, 106, 106, 106),
         onTap: _onItemTapped,
       ),
       backgroundColor: Color.fromARGB(211, 255, 255, 255),

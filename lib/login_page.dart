@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_const_constructors, library_private_types_in_public_api, use_key_in_widget_constructors, use_build_context_synchronously
+// ignore_for_file: prefer_const_constructors, library_private_types_in_public_api, use_key_in_widget_constructors, use_build_context_synchronously, sort_child_properties_last
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -60,12 +60,17 @@ class _LoginPageState extends State<LoginPage> {
                         onPressed: _isLoading || _isCooldown ? null : _login,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 9.0),
-                          child: _isLoading
-                              ? CircularProgressIndicator()
-                              : Text('Login', style: TextStyle(fontSize: 15)),
+                          child: Text('Login', style: TextStyle(fontSize: 15)),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: Color(0xFF50727B), // Text color
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
-                      SizedBox(height: 0),
+                      SizedBox(height: 20), // Increased space between buttons
                       TextButton(
                         onPressed: () {
                           Navigator.push(

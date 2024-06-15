@@ -1,4 +1,4 @@
-// ignore_for_file: use_key_in_widget_constructors, library_private_types_in_public_api, prefer_const_constructors, use_build_context_synchronously
+// ignore_for_file: use_key_in_widget_constructors, library_private_types_in_public_api, prefer_const_constructors, use_build_context_synchronously, sort_child_properties_last
 
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
@@ -101,14 +101,20 @@ class _RegistrationPageState extends State<RegistrationPage> {
                             (!_isFormValid || _isLoading) ? null : _register,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 9.0),
-                          child: _isLoading
-                              ? CircularProgressIndicator()
-                              : Text(
-                                  'Register',
-                                  style: TextStyle(fontSize: 15),
-                                ),
+                          child: Text(
+                            'Register',
+                            style: TextStyle(fontSize: 15),
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: Color(0xFF50727B), // Text color
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
+                      SizedBox(height: 20),
                       TextButton(
                         onPressed: () => Navigator.pop(context),
                         child: Text(
@@ -193,7 +199,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
       }
       if (label == 'Password') {
         bool passwordValid =
-            RegExp(r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$')
+            RegExp(r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d @$!%*?&]{8,}$')
                     .hasMatch(value) &&
                 value.replaceAll(RegExp(r'[^@$!%*?&]'), '').length == 1;
         _passwordError = passwordValid
