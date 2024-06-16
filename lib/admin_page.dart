@@ -1,4 +1,4 @@
-// ignore_for_file: library_private_types_in_public_api, use_key_in_widget_constructors, prefer_final_fields, use_build_context_synchronously
+// ignore_for_file: library_private_types_in_public_api, use_key_in_widget_constructors, prefer_final_fields, use_build_context_synchronously, prefer_const_literals_to_create_immutables
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -76,7 +76,7 @@ class _AdminPageState extends State<AdminPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          title: Row(
+          title: const Row(
             children: [
               Text(
                 "Confirm Deletion",
@@ -89,7 +89,7 @@ class _AdminPageState extends State<AdminPage> {
             TextButton(
               style: TextButton.styleFrom(
                 foregroundColor: Colors.white,
-                backgroundColor: Color(0xFF50727B),
+                backgroundColor: const Color(0xFF50727B),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -100,7 +100,7 @@ class _AdminPageState extends State<AdminPage> {
             TextButton(
               style: TextButton.styleFrom(
                 foregroundColor: Colors.white,
-                backgroundColor: Color.fromARGB(255, 142, 33, 25),
+                backgroundColor: const Color.fromARGB(255, 142, 33, 25),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),

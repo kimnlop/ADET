@@ -221,70 +221,87 @@ class _FeedTabState extends State<FeedTab> {
             return AlertDialog(
               title:
                   Text('New Post', style: TextStyle(color: Colors.deepPurple)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: _titleController,
-                    maxLength: 20, // Limit title to 20 characters
-                    decoration: InputDecoration(
-                      hintText: 'Title',
-                      border: OutlineInputBorder(),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _titleController,
+                      maxLength: 20, // Limit title to 20 characters
+                      decoration: InputDecoration(
+                        hintText: 'Title',
+                        border: OutlineInputBorder(),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Stack(
-                    children: [
-                      TextField(
-                        controller: _descriptionController,
-                        minLines: 3,
-                        maxLines: 5,
-                        decoration: InputDecoration(
-                          hintText: 'Description',
-                          border: OutlineInputBorder(),
+                    const SizedBox(height: 10),
+                    Stack(
+                      children: [
+                        TextField(
+                          controller: _descriptionController,
+                          maxLength: 200,
+                          minLines: 3,
+                          maxLines: 5,
+                          decoration: InputDecoration(
+                            hintText: 'Description',
+                            border: OutlineInputBorder(),
+                          ),
                         ),
-                      ),
-                      Positioned(
-                        bottom: 8,
-                        right: 8,
-                        child: Row(
-                          children: [
-                            IconButton(
-                              onPressed: () =>
-                                  _pickImage(ImageSource.gallery, setState),
-                              icon: Icon(Icons.photo_library),
-                            ),
-                            IconButton(
-                              onPressed: () =>
-                                  _pickImage(ImageSource.camera, setState),
-                              icon: Icon(Icons.camera_alt),
-                            ),
-                          ],
+                        Positioned(
+                          bottom: 20,
+                          right: 8,
+                          child: Row(
+                            children: [
+                              IconButton(
+                                onPressed: () =>
+                                    _pickImage(ImageSource.gallery, setState),
+                                icon: Icon(Icons.photo_library),
+                              ),
+                              IconButton(
+                                onPressed: () =>
+                                    _pickImage(ImageSource.camera, setState),
+                                icon: Icon(Icons.camera_alt),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  _photoController.text.isNotEmpty
-                      ? Text(
-                          _photoName,
-                          style: TextStyle(color: Colors.green),
-                        )
-                      : SizedBox(),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _photoController.text.isNotEmpty
+                        ? Text(
+                            _photoName,
+                            style: TextStyle(color: Colors.green),
+                          )
+                        : SizedBox(),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: const Color.fromARGB(255, 142, 33, 25),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   onPressed:
                       _isPosting ? null : () => Navigator.of(context).pop(),
-                  child:
-                      Text('Cancel', style: TextStyle(color: Colors.redAccent)),
+                  child: const Text('Cancel'),
                 ),
                 TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.green,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   onPressed: _isPosting ? null : () => _post(setState),
                   child: _isPosting
                       ? CircularProgressIndicator()
-                      : Text('Post', style: TextStyle(color: Colors.green)),
+                      : const Text('Post'),
                 ),
               ],
             );

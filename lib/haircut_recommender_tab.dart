@@ -1,3 +1,5 @@
+// ignore_for_file: use_key_in_widget_constructors, library_private_types_in_public_api, prefer_final_fields, use_build_context_synchronously, sized_box_for_whitespace
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -9,7 +11,6 @@ class HaircutRecommenderTab extends StatefulWidget {
 
 class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
   PageController _pageController = PageController();
-  int _currentPage = 0;
   int _currentImageIndex = 0;
   List<PageController> _imageControllers = [];
 
@@ -49,7 +50,7 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
     "Angled Bob with Soft Fringe": "assets/AngledBobwithSoftFringe.jpg",
     "Surfer Shag": "SurferShag.jpg",
     "Voluminous Waves with Deep Layers":
-        "assets/VoluminousWaveswithDeepLayers.jpg",
+        "assets/VoluminousWavswithDeepLayers.jpg",
     "Full Bodied Curls with Layers": "assets/FullBodiedCurlswithLayers.jpg",
     "Grown Out Layers with Texture": "assets/GrownOutLayerswithTexture.jpg",
     "Mid-Length Cut with Dynamic Layers":
@@ -89,6 +90,13 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
           content: const Text('Please select all options.'),
           actions: [
             TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.red, // Red background for Cancel button
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('OK'),
             ),
@@ -131,6 +139,13 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
           ),
           actions: [
             TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.green, // Green background for OK button
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('OK'),
             ),
@@ -145,6 +160,14 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
           content: const Text('Failed to get recommendation.'),
           actions: [
             TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor:
+                    Colors.red, // Red background for Error OK button
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('OK'),
             ),
@@ -160,7 +183,7 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
       body: Stack(
         children: [
           Container(
-            decoration: BoxDecoration(),
+            decoration: const BoxDecoration(),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -169,7 +192,6 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
               itemCount: options.length,
               onPageChanged: (index) {
                 setState(() {
-                  _currentPage = index;
                   _currentImageIndex = 0; // Reset image index when page changes
                 });
               },
@@ -178,7 +200,7 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(height: 50), // Space for uniform alignment
+                    const SizedBox(height: 50), // Space for uniform alignment
                     if (index < options.length - 1)
                       Stack(
                         children: [
@@ -195,7 +217,7 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
                               itemBuilder: (context, imageIndex) {
                                 return Card(
                                   elevation: 4.0,
-                                  margin: EdgeInsets.all(8.0),
+                                  margin: const EdgeInsets.all(8.0),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
                                   ),
@@ -216,11 +238,11 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
                               top: 0.0,
                               bottom: 0.0,
                               child: IconButton(
-                                icon: Icon(Icons.arrow_back,
+                                icon: const Icon(Icons.arrow_back,
                                     color: Color(0xFF50727B)),
                                 onPressed: () {
                                   _imageControllers[index].previousPage(
-                                    duration: Duration(milliseconds: 300),
+                                    duration: const Duration(milliseconds: 300),
                                     curve: Curves.easeInOut,
                                   );
                                 },
@@ -232,11 +254,11 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
                               top: 0.0,
                               bottom: 0.0,
                               child: IconButton(
-                                icon: Icon(Icons.arrow_forward,
+                                icon: const Icon(Icons.arrow_forward,
                                     color: Color(0xFF50727B)),
                                 onPressed: () {
                                   _imageControllers[index].nextPage(
-                                    duration: Duration(milliseconds: 300),
+                                    duration: const Duration(milliseconds: 300),
                                     curve: Curves.easeInOut,
                                   );
                                 },
@@ -244,7 +266,7 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
                             ),
                         ],
                       ),
-                    SizedBox(height: 20), // Space for uniform alignment
+                    const SizedBox(height: 20), // Space for uniform alignment
                     Center(
                       child: Text(
                         options[index][0],
@@ -287,7 +309,7 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
                             padding: const EdgeInsets.all(16.0),
                             child: Text(
                               options[index][i + 1],
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF50727B),
@@ -333,20 +355,4 @@ class _HaircutRecommenderTabState extends State<HaircutRecommenderTab> {
       ),
     );
   }
-}
-
-void main() {
-  runApp(MaterialApp(
-    home: HaircutRecommenderTab(),
-    theme: ThemeData(
-      primarySwatch: Colors.blueGrey,
-      scaffoldBackgroundColor: Color(0xFF344955),
-      textTheme: const TextTheme(
-        bodyText2: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFFE6E6E6)),
-      ),
-    ),
-  ));
 }

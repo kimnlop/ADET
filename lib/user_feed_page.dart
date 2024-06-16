@@ -1,3 +1,5 @@
+// ignore_for_file: use_key_in_widget_constructors, prefer_const_constructors_in_immutables, use_build_context_synchronously, avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -21,17 +23,17 @@ class UserFeedPage extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text('Error loading feed items'));
+            return const Center(child: Text('Error loading feed items'));
           }
 
           if (!snapshot.hasData) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
           final feedItems = snapshot.data!.docs;
 
           if (feedItems.isEmpty) {
-            return Center(child: Text('No feed items found'));
+            return const Center(child: Text('No feed items found'));
           }
 
           return ListView.builder(
@@ -65,12 +67,12 @@ class UserFeedPage extends StatelessWidget {
           .delete();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Post has been deleted successfully')),
+        const SnackBar(content: Text('Post has been deleted successfully')),
       );
     } catch (e) {
       print('Failed to delete post: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete post')),
+        const SnackBar(content: Text('Failed to delete post')),
       );
     }
   }
@@ -104,8 +106,8 @@ class UserFeedPage extends StatelessWidget {
                   children: [
                     Text(
                       feedItem.title,
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     PopupMenuButton<String>(
                       onSelected: (value) {
@@ -115,7 +117,7 @@ class UserFeedPage extends StatelessWidget {
                       },
                       itemBuilder: (BuildContext context) {
                         return [
-                          PopupMenuItem(
+                          const PopupMenuItem(
                             value: 'delete',
                             child: Text('Delete'),
                           ),
@@ -126,12 +128,12 @@ class UserFeedPage extends StatelessWidget {
                 ),
                 Text(
                   'by ${feedItem.userName}',
-                  style: TextStyle(fontSize: 10, color: Colors.grey),
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   feedItem.description,
-                  style: TextStyle(fontSize: 16),
+                  style: const TextStyle(fontSize: 16),
                 ),
               ],
             ),
@@ -149,7 +151,7 @@ class UserFeedPage extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          title: Row(
+          title: const Row(
             children: [
               Text(
                 "Confirm Deletion",
@@ -157,23 +159,23 @@ class UserFeedPage extends StatelessWidget {
               ),
             ],
           ),
-          content: Text('Are you sure you want to delete this post?'),
+          content: const Text('Are you sure you want to delete this post?'),
           actions: [
             TextButton(
               style: TextButton.styleFrom(
                 foregroundColor: Colors.white,
-                backgroundColor: Color(0xFF50727B),
+                backgroundColor: const Color(0xFF50727B),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               style: TextButton.styleFrom(
                 foregroundColor: Colors.white,
-                backgroundColor: Color.fromARGB(255, 142, 33, 25),
+                backgroundColor: const Color.fromARGB(255, 142, 33, 25),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -182,7 +184,7 @@ class UserFeedPage extends StatelessWidget {
                 Navigator.of(dialogContext).pop();
                 _deletePost(context, feedItem);
               },
-              child: Text('Delete'),
+              child: const Text('Delete'),
             ),
           ],
         );

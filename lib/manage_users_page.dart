@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
+// ignore_for_file: use_key_in_widget_constructors, library_private_types_in_public_api, prefer_final_fields, use_build_context_synchronously, prefer_const_constructors, sort_child_properties_last, unnecessary_string_interpolations, prefer_const_literals_to_create_immutables, use_rethrow_when_possible, avoid_print, unused_element
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -57,14 +57,17 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
     });
   }
 
-  Future<void> _disableAccount(String userId) async {
-    await _firestore.collection('users').doc(userId).update({
-      'isDisabled': true,
+  Future<void> _toggleAccountStatus(UserItem user) async {
+    bool newStatus = !user.isDisabled;
+    await _firestore.collection('users').doc(user.id).update({
+      'isDisabled': newStatus,
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Account has been disabled successfully')),
+      SnackBar(
+          content: Text(
+              'Account has been ${newStatus ? 'disabled' : 'enabled'} successfully')),
     );
-    _fetchUsers(); // Refresh the user list after disabling an account
+    _fetchUsers(); // Refresh the user list after toggling account status
   }
 
   void _viewAccount(String userId, String userName) {
@@ -76,24 +79,50 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
     );
   }
 
-  void _confirmDisableAccount(String userId) {
+  void _confirmToggleAccountStatus(UserItem user) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Disable Account'),
-          content: Text('Are you sure you want to disable this account?'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: Text(
+            '${user.isDisabled ? 'Enable' : 'Disable'} Account',
+            style:
+                TextStyle(color: user.isDisabled ? Colors.green : Colors.red),
+          ),
+          content: Text(
+              'Are you sure you want to ${user.isDisabled ? 'enable' : 'disable'} this account?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel'),
-            ),
-            TextButton(
+              child: Text("Cancel"),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Color(0xFF50727B),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               onPressed: () {
                 Navigator.of(context).pop();
-                _disableAccount(userId);
               },
-              child: Text('Disable'),
+            ),
+            TextButton(
+              child: Text('${user.isDisabled ? 'Enable' : 'Disable'}'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: user.isDisabled
+                    ? Colors.green
+                    : const Color.fromARGB(255, 142, 33, 25),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _toggleAccountStatus(user);
+              },
             ),
           ],
         );
@@ -165,7 +194,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                   ),
                 ),
                 SizedBox(width: 48), // Space for View Account button
-                SizedBox(width: 48), // Space for Disable Account button
+                SizedBox(width: 48), // Space for Disable/Enable Account button
               ],
             ),
           ),
@@ -182,6 +211,9 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                           itemBuilder: (context, index) {
                             var userItem = paginatedUsers[index];
                             return Card(
+                              color: userItem.isDisabled
+                                  ? Colors.red[100]
+                                  : Colors.green[100],
                               margin: EdgeInsets.symmetric(vertical: 8.0),
                               elevation: 4.0,
                               child: ListTile(
@@ -195,6 +227,9 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                                         style: TextStyle(
                                           fontSize: 15.0,
                                           fontWeight: FontWeight.bold,
+                                          color: userItem.isDisabled
+                                              ? Colors.red[900]
+                                              : Colors.green[900],
                                         ),
                                       ),
                                     ),
@@ -203,7 +238,10 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                                         userItem.email,
                                         style: TextStyle(
                                           fontSize: 15,
-                                          color: Colors.grey[600],
+                                          color: userItem.isDisabled
+                                              ? const Color.fromARGB(
+                                                  255, 142, 33, 25)
+                                              : Colors.green[900],
                                         ),
                                       ),
                                     ),
@@ -213,10 +251,16 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                                           userItem.id, userItem.userName),
                                     ),
                                     IconButton(
-                                      icon:
-                                          Icon(Icons.block, color: Colors.red),
+                                      icon: Icon(
+                                          userItem.isDisabled
+                                              ? Icons.check
+                                              : Icons.block,
+                                          color: userItem.isDisabled
+                                              ? Colors.green
+                                              : const Color.fromARGB(
+                                                  255, 142, 33, 25)),
                                       onPressed: () =>
-                                          _confirmDisableAccount(userItem.id),
+                                          _confirmToggleAccountStatus(userItem),
                                     ),
                                   ],
                                 ),
@@ -252,18 +296,27 @@ class UserItem {
   final String id;
   final String userName;
   final String email;
+  final bool isDisabled;
 
   UserItem({
     required this.id,
     required this.userName,
     required this.email,
+    required this.isDisabled,
   });
 
   factory UserItem.fromSnapshot(DocumentSnapshot snapshot) {
-    return UserItem(
-      id: snapshot.id,
-      userName: snapshot['userName'],
-      email: snapshot['email'],
-    );
+    try {
+      final data = snapshot.data() as Map<String, dynamic>;
+      return UserItem(
+        id: snapshot.id,
+        userName: data['userName'] ?? '',
+        email: data['email'] ?? '',
+        isDisabled: data['isDisabled'] ?? false,
+      );
+    } catch (e) {
+      print('Error creating UserItem from snapshot: ${snapshot.data()}');
+      throw e;
+    }
   }
 }

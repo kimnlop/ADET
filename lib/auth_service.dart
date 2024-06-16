@@ -12,8 +12,13 @@ class AuthService {
   }
 
   Future<UserCredential> signIn(String email, String password) async {
-    return await _firebaseAuth.signInWithEmailAndPassword(
-        email: email, password: password);
+    UserCredential userCredential = await _firebaseAuth
+        .signInWithEmailAndPassword(email: email, password: password);
+    bool isDisabled = await isAccountDisabled(userCredential.user!.uid);
+    if (isDisabled) {
+      throw Exception('Account is disabled.');
+    }
+    return userCredential;
   }
 
   Future<UserCredential> signUp(String email, String password) async {
@@ -23,7 +28,7 @@ class AuthService {
       'email': email,
       'userName': email.split('@')[0], // Default username based on email
       'role': 0, // Default role is 0 for non-admin
-      'disabled': false, // Initially set account as not disabled
+      'isDisabled': false, // Initially set account as not disabled
     });
     return userCredential;
   }
@@ -56,15 +61,17 @@ class AuthService {
   }
 
   Future<void> disableAccount(String userId) async {
-    await _firestore.collection('users').doc(userId).update({
-      'disabled': true,
-    });
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .update({'isDisabled': true});
   }
 
   Future<void> enableAccount(String userId) async {
-    await _firestore.collection('users').doc(userId).update({
-      'disabled': false,
-    });
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .update({'isDisabled': false});
   }
 
   Future<bool> isAccountDisabled(String userId) async {
@@ -72,9 +79,9 @@ class AuthService {
         await _firestore.collection('users').doc(userId).get();
     if (userDoc.exists) {
       Map<String, dynamic> data = userDoc.data() as Map<String, dynamic>;
-      return data['disabled'] ?? false;
+      return data['isDisabled'] ?? false;
     }
-    return false; // Default to false if document not found or disabled field doesn't exist
+    return false; // Default to false if document not found or isDisabled field doesn't exist
   }
 
   Future<void> signOut() async {

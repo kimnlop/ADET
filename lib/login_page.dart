@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_const_constructors, library_private_types_in_public_api, use_key_in_widget_constructors, use_build_context_synchronously, sort_child_properties_last
+// ignore_for_file: use_key_in_widget_constructors, library_private_types_in_public_api, sort_child_properties_last, use_build_context_synchronously
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -33,7 +33,7 @@ class _LoginPageState extends State<LoginPage> {
       body: Stack(
         children: [
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               image: DecorationImage(
                 image: AssetImage("assets/crowdcutsbg.png"),
                 fit: BoxFit.cover,
@@ -46,31 +46,33 @@ class _LoginPageState extends State<LoginPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
-                      SizedBox(height: 435),
+                      const SizedBox(height: 435),
                       _buildTextField(emailController, 'Email',
                           TextInputType.emailAddress, _emailError),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       _buildTextField(passwordController, 'Password',
                           TextInputType.visiblePassword, '',
                           isPassword: true,
                           isPasswordVisible: _passwordVisible,
                           togglePasswordVisibility: _togglePasswordVisibility),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: _isLoading || _isCooldown ? null : _login,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 9.0),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 9.0),
                           child: Text('Login', style: TextStyle(fontSize: 15)),
                         ),
                         style: ElevatedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          backgroundColor: Color(0xFF50727B), // Text color
+                          backgroundColor:
+                              const Color(0xFF50727B), // Text color
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ),
-                      SizedBox(height: 20), // Increased space between buttons
+                      const SizedBox(
+                          height: 20), // Increased space between buttons
                       TextButton(
                         onPressed: () {
                           Navigator.push(
@@ -78,7 +80,7 @@ class _LoginPageState extends State<LoginPage> {
                               MaterialPageRoute(
                                   builder: (context) => RegistrationPage()));
                         },
-                        child: Text("Register",
+                        child: const Text("Register",
                             style:
                                 TextStyle(fontSize: 16, color: Colors.white)),
                       ),
@@ -94,8 +96,8 @@ class _LoginPageState extends State<LoginPage> {
               color: Colors.black.withOpacity(0.5),
               child: Center(
                 child: _isLoading
-                    ? CircularProgressIndicator()
-                    : Text(
+                    ? const CircularProgressIndicator()
+                    : const Text(
                         'Too many attempts. Please wait 30 seconds.',
                         style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
@@ -117,15 +119,15 @@ class _LoginPageState extends State<LoginPage> {
         controller: controller,
         keyboardType: keyboardType,
         obscureText: isPassword && !isPasswordVisible,
-        style: TextStyle(fontSize: 16.0),
+        style: const TextStyle(fontSize: 16.0),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(color: Colors.white),
+          labelStyle: const TextStyle(color: Colors.white),
           filled: true,
           fillColor: Colors.white.withOpacity(0.4),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
           focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.white),
+              borderSide: const BorderSide(color: Colors.white),
               borderRadius: BorderRadius.circular(10.0)),
           errorText: errorText.isNotEmpty ? errorText : null,
           suffixIcon: isPassword
@@ -173,12 +175,19 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         _attempts++;
       });
-      if (_attempts >= 3) {
-        _startCooldown();
-      } else {
-        // Handle error, e.g., show error message
+
+      // Check if the error is due to a disabled account
+      if (e.toString().contains('Account is disabled')) {
         _showErrorDialog(
-            "Failed to login. Please check your credentials and try again.");
+            "Your account is disabled. Please contact support for assistance.");
+      } else {
+        if (_attempts >= 3) {
+          _startCooldown();
+        } else {
+          // Handle error, e.g., show error message
+          _showErrorDialog(
+              "Failed to login. Please check your credentials and try again.");
+        }
       }
     } finally {
       setState(() {
@@ -192,7 +201,7 @@ class _LoginPageState extends State<LoginPage> {
       _isCooldown = true;
       _isLoading = false;
     });
-    _cooldownTimer = Timer(Duration(seconds: 30), () {
+    _cooldownTimer = Timer(const Duration(seconds: 30), () {
       setState(() {
         _isCooldown = false;
         _attempts = 0; // Reset attempts after cooldown
@@ -205,18 +214,41 @@ class _LoginPageState extends State<LoginPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Error"),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title:
+              const Text("Error", style: TextStyle(color: Color(0xFF50727B))),
           content: Text(message),
           actions: <Widget>[
-            TextButton(
-              child: Text('OK'),
+            _buildAlertDialogButton(
+              label: 'OK',
               onPressed: () {
                 Navigator.of(context).pop(); // Dismiss alert dialog
               },
+              backgroundColor: const Color(0xFF50727B),
             ),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildAlertDialogButton({
+    required String label,
+    required VoidCallback onPressed,
+    required Color backgroundColor,
+  }) {
+    return TextButton(
+      child: Text(label),
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.white,
+        backgroundColor: backgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      onPressed: onPressed,
     );
   }
 }

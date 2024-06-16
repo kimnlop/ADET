@@ -1,3 +1,5 @@
+// ignore_for_file: use_key_in_widget_constructors
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,7 +13,7 @@ class MyAccountTab extends StatelessWidget {
     final User? currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser == null) {
-      return Scaffold(
+      return const Scaffold(
         body: Center(
           child: Text('No user logged in'),
         ),
@@ -29,17 +31,17 @@ class MyAccountTab extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text('Error loading feed items'));
+            return const Center(child: Text('Error loading feed items'));
           }
 
           if (!snapshot.hasData) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
           final feedItems = snapshot.data!.docs;
 
           if (feedItems.isEmpty) {
-            return Center(child: Text('No feed items found'));
+            return const Center(child: Text('No feed items found'));
           }
 
           return ListView.builder(
@@ -56,7 +58,7 @@ class MyAccountTab extends StatelessWidget {
                       title: Text(feedItemData['title'] ?? 'No Title'),
                       subtitle:
                           Text(feedItemData['description'] ?? 'No Content'),
-                      trailing: Icon(Icons.error, color: Colors.red),
+                      trailing: const Icon(Icons.error, color: Colors.red),
                     );
                   }
 
@@ -65,7 +67,7 @@ class MyAccountTab extends StatelessWidget {
                       title: Text(feedItemData['title'] ?? 'No Title'),
                       subtitle:
                           Text(feedItemData['description'] ?? 'No Content'),
-                      trailing: CircularProgressIndicator(),
+                      trailing: const CircularProgressIndicator(),
                     );
                   }
 
@@ -148,7 +150,7 @@ class MyAccountTab extends StatelessWidget {
                           Expanded(
                             child: Text(
                               feedItem.title,
-                              style: TextStyle(
+                              style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -161,7 +163,7 @@ class MyAccountTab extends StatelessWidget {
                             } else if (value == 'save') {
                               if (titleController.text.trim().isEmpty) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
+                                  const SnackBar(
                                     content: Text(
                                         'Title cannot be empty or spaces only. Please provide a valid title.'),
                                     backgroundColor: Colors.red,
@@ -178,22 +180,22 @@ class MyAccountTab extends StatelessWidget {
                                 });
                               }
                             } else if (value == 'delete') {
-                              _deleteFeedItem(feedItem.id);
+                              _deleteFeedItem(feedItem.id, context);
                             }
                           },
                           itemBuilder: (BuildContext context) {
                             return [
                               if (!isEditing)
-                                PopupMenuItem(
+                                const PopupMenuItem(
                                   value: 'edit',
                                   child: Text('Edit'),
                                 ),
                               if (isEditing)
-                                PopupMenuItem(
+                                const PopupMenuItem(
                                   value: 'save',
                                   child: Text('Save'),
                                 ),
-                              PopupMenuItem(
+                              const PopupMenuItem(
                                 value: 'delete',
                                 child: Text('Delete'),
                               ),
@@ -205,8 +207,9 @@ class MyAccountTab extends StatelessWidget {
                     if (isEditing)
                       TextField(
                         controller: descriptionController,
+                        maxLength: 200,
                         maxLines: null,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Description',
                         ),
                       )
@@ -216,12 +219,13 @@ class MyAccountTab extends StatelessWidget {
                         children: [
                           Text(
                             'by ${feedItem.userName}',
-                            style: TextStyle(fontSize: 10, color: Colors.grey),
+                            style: const TextStyle(
+                                fontSize: 10, color: Colors.grey),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             feedItem.description,
-                            style: TextStyle(fontSize: 16),
+                            style: const TextStyle(fontSize: 16),
                           ),
                         ],
                       ),
@@ -243,14 +247,14 @@ class MyAccountTab extends StatelessWidget {
         future: _loadImage(photoUrl),
         builder: (context, AsyncSnapshot<ImageProvider> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error loading image'));
+            return const Center(child: Text('Error loading image'));
           } else if (snapshot.hasData) {
             _imageCache[photoUrl] = snapshot.data!;
             return Image(image: snapshot.data!);
           } else {
-            return Center(child: Text('No image available'));
+            return const Center(child: Text('No image available'));
           }
         },
       );
@@ -281,11 +285,57 @@ class MyAccountTab extends StatelessWidget {
     });
   }
 
-  void _deleteFeedItem(String feedItemId) async {
-    await FirebaseFirestore.instance
-        .collection('feedItems')
-        .doc(feedItemId)
-        .delete();
+  Future<void> _deleteFeedItem(String feedItemId, BuildContext context) async {
+    bool confirmDelete = await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: const Row(
+            children: [
+              Text(
+                "Confirm Deletion",
+                style: TextStyle(color: Color(0xFF50727B)),
+              ),
+            ],
+          ),
+          content: const Text('Are you sure you want to delete this post?'),
+          actions: [
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: const Color(0xFF50727B),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: const Color.fromARGB(255, 142, 33, 25),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmDelete) {
+      await FirebaseFirestore.instance
+          .collection('feedItems')
+          .doc(feedItemId)
+          .delete();
+    }
   }
 }
 
