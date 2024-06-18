@@ -1,6 +1,5 @@
 // ignore_for_file: use_key_in_widget_constructors, library_private_types_in_public_api, sort_child_properties_last, use_build_context_synchronously
 
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'registration_page.dart';
@@ -17,15 +16,6 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false; // Track loading state
   bool _passwordVisible = false; // Track password visibility
   String _emailError = ''; // Track email error
-  int _attempts = 0; // Track login attempts
-  bool _isCooldown = false; // Track if user is in cooldown period
-  Timer? _cooldownTimer; // Timer for cooldown period
-
-  @override
-  void dispose() {
-    _cooldownTimer?.cancel(); // Cancel the timer if the widget is disposed
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +47,7 @@ class _LoginPageState extends State<LoginPage> {
                           togglePasswordVisibility: _togglePasswordVisibility),
                       const SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: _isLoading || _isCooldown ? null : _login,
+                        onPressed: _isLoading ? null : _login,
                         child: const Padding(
                           padding: EdgeInsets.symmetric(vertical: 9.0),
                           child: Text('Login', style: TextStyle(fontSize: 15)),
@@ -90,17 +80,11 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
-          if (_isLoading ||
-              _isCooldown) // Show loader overlay if loading or in cooldown
+          if (_isLoading) // Show loader overlay if loading
             Container(
               color: Colors.black.withOpacity(0.5),
-              child: Center(
-                child: _isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text(
-                        'Too many attempts. Please wait 30 seconds.',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
+              child: const Center(
+                child: CircularProgressIndicator(),
               ),
             ),
         ],
@@ -164,49 +148,26 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await AuthService()
           .signIn(emailController.text.trim(), passwordController.text.trim());
-      // Reset attempts on successful login
-      setState(() {
-        _attempts = 0;
-      });
       // Navigate to the home screen if successful, and prevent back navigation to login
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => SuccessPage()));
     } catch (e) {
-      setState(() {
-        _attempts++;
-      });
-
-      // Check if the error is due to a disabled account
-      if (e.toString().contains('Account is disabled')) {
+      String errorMessage = e.toString();
+      if (errorMessage.contains('Account is disabled')) {
         _showErrorDialog(
-            "Your account is disabled. Please contact support for assistance.");
+            "Your account has been disabled. Please contact support for assistance.");
+      } else if (errorMessage.contains('Too many attempts. Please wait')) {
+        _showErrorDialog(
+            "Too many attempts. Try again in 30 seconds."); // Shorter cooldown message
       } else {
-        if (_attempts >= 3) {
-          _startCooldown();
-        } else {
-          // Handle error, e.g., show error message
-          _showErrorDialog(
-              "Failed to login. Please check your credentials and try again.");
-        }
+        _showErrorDialog(
+            "Failed to login. Please check your credentials and try again.");
       }
     } finally {
       setState(() {
         _isLoading = false; // Stop loading
       });
     }
-  }
-
-  void _startCooldown() {
-    setState(() {
-      _isCooldown = true;
-      _isLoading = false;
-    });
-    _cooldownTimer = Timer(const Duration(seconds: 30), () {
-      setState(() {
-        _isCooldown = false;
-        _attempts = 0; // Reset attempts after cooldown
-      });
-    });
   }
 
   void _showErrorDialog(String message) {
