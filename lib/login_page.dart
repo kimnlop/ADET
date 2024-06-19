@@ -10,12 +10,31 @@ class LoginPage extends StatefulWidget {
   _LoginPageState createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage>
+    with SingleTickerProviderStateMixin {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool _isLoading = false; // Track loading state
   bool _passwordVisible = false; // Track password visibility
   String _emailError = ''; // Track email error
+  late AnimationController _animationController; // Animation controller
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -155,13 +174,21 @@ class _LoginPageState extends State<LoginPage> {
       String errorMessage = e.toString();
       if (errorMessage.contains('Account is disabled')) {
         _showErrorDialog(
-            "Your account has been disabled. Please contact support for assistance.");
+            "Your account has been disabled. Please contact support for assistance.",
+            titleColor: const Color.fromARGB(255, 142, 33, 25),
+            backgroundColor: Colors.red.shade100,
+            icon: Icons.block);
       } else if (errorMessage.contains('Too many attempts. Please wait')) {
-        _showErrorDialog(
-            "Too many attempts. Try again in 30 seconds."); // Shorter cooldown message
+        _showErrorDialog("Too many attempts. Try again in 30 seconds.",
+            titleColor: Colors.orange,
+            backgroundColor: Colors.orange.shade100,
+            icon: Icons.warning);
       } else {
         _showErrorDialog(
-            "Failed to login. Please check your credentials and try again.");
+            "Failed to login. Please check your credentials and try again.",
+            titleColor: const Color.fromARGB(255, 142, 33, 25),
+            backgroundColor: Colors.red.shade100,
+            icon: Icons.error);
       }
     } finally {
       setState(() {
@@ -170,26 +197,47 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _showErrorDialog(String message) {
+  void _showErrorDialog(String message,
+      {required Color titleColor,
+      required Color backgroundColor,
+      required IconData icon}) {
+    _animationController.reset();
+    _animationController.forward();
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+        return ScaleTransition(
+          scale: CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeInOut,
           ),
-          title:
-              const Text("Error", style: TextStyle(color: Color(0xFF50727B))),
-          content: Text(message),
-          actions: <Widget>[
-            _buildAlertDialogButton(
-              label: 'OK',
-              onPressed: () {
-                Navigator.of(context).pop(); // Dismiss alert dialog
-              },
-              backgroundColor: const Color(0xFF50727B),
+          child: AlertDialog(
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 5, horizontal: 15),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
             ),
-          ],
+            title: Icon(
+              icon,
+              color: titleColor,
+              size: 50, // Reduced size of the icon
+            ),
+            content: Text(
+              message,
+              style: const TextStyle(
+                  fontSize: 16), // Reduced font size of the message
+            ),
+            backgroundColor: backgroundColor,
+            actions: <Widget>[
+              _buildAlertDialogButton(
+                label: 'OK',
+                onPressed: () {
+                  Navigator.of(context).pop(); // Dismiss alert dialog
+                },
+                backgroundColor: titleColor,
+              ),
+            ],
+          ),
         );
       },
     );

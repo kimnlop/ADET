@@ -71,14 +71,14 @@ class _SuccessPageState extends State<SuccessPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color.fromARGB(211, 255, 255, 255), // Dark gray color
-        automaticallyImplyLeading: false, // Hide back button
+        automaticallyImplyLeading: false,
         title: Row(
           children: [
             Padding(
-              padding: const EdgeInsets.only(right: 8.0), // Adjust as needed
+              padding: const EdgeInsets.only(right: 8.0),
               child: Image.asset(
-                'assets/crowdcutslogo2.png', // Replace with your logo image path
-                height: 40, // Adjust height as needed
+                'assets/cclogo3.png',
+                height: 40,
               ),
             ),
             Text(

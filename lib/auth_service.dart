@@ -159,7 +159,7 @@ class AuthService {
       Map<String, dynamic>? data = userDoc.data() as Map<String, dynamic>?;
       return data?['isDisabled'] ?? false;
     }
-    return false; // Default to false if document not found or isDisabled field doesn't exist
+    return false;
   }
 
   Future<void> signOut() async {

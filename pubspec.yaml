@@ -76,5 +76,6 @@ flutter:
     - assets/TexturedQuiff.jpg
     - assets/TousledTopwithThinLayers.jpg
     - assets/VoluminousWavswithDeepLayers.jpg
+    - assets/cclogo3.png
 
   uses-material-design: true
