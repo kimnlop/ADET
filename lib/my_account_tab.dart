@@ -71,13 +71,9 @@ class MyAccountTab extends StatelessWidget {
                     );
                   }
 
-                  var feedItem = FeedItem(
-                    id: feedItems[index].id,
-                    title: feedItemData['title'] ?? 'Untitled',
-                    description: feedItemData['description'] ?? '',
-                    userId: feedItemData['userId'],
-                    userName: userNameSnapshot.data!,
-                    photoUrl: feedItemData['photoUrl'],
+                  var feedItem = FeedItem.fromSnapshot(
+                    feedItems[index],
+                    userNameSnapshot.data!,
                   );
 
                   return _buildFeedItem(feedItem, context);
@@ -227,6 +223,71 @@ class MyAccountTab extends StatelessWidget {
                             feedItem.description,
                             style: const TextStyle(fontSize: 16),
                           ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                iconSize: 28,
+                                padding: const EdgeInsets.only(
+                                    left: 8.0, right: 8.0),
+                                icon: Icon(
+                                  feedItem.reactions[FirebaseAuth
+                                              .instance.currentUser?.uid] ==
+                                          'like'
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: feedItem.reactions[FirebaseAuth
+                                              .instance.currentUser?.uid] ==
+                                          'like'
+                                      ? Colors.red
+                                      : null,
+                                ),
+                                onPressed: () =>
+                                    _toggleReaction(feedItem, 'like', setState),
+                              ),
+                              Text('${feedItem.likesCount}'),
+                              IconButton(
+                                iconSize: 28,
+                                padding: const EdgeInsets.only(
+                                    left: 8.0, right: 8.0),
+                                icon: Icon(
+                                  feedItem.reactions[FirebaseAuth
+                                              .instance.currentUser?.uid] ==
+                                          'dope'
+                                      ? Icons.whatshot
+                                      : Icons.whatshot_outlined,
+                                  color: feedItem.reactions[FirebaseAuth
+                                              .instance.currentUser?.uid] ==
+                                          'dope'
+                                      ? Colors.orange
+                                      : null,
+                                ),
+                                onPressed: () =>
+                                    _toggleReaction(feedItem, 'dope', setState),
+                              ),
+                              Text('${feedItem.dopeCount}'),
+                              IconButton(
+                                iconSize: 28,
+                                padding: const EdgeInsets.only(
+                                    left: 8.0, right: 8.0),
+                                icon: Icon(
+                                  feedItem.reactions[FirebaseAuth
+                                              .instance.currentUser?.uid] ==
+                                          'scissor'
+                                      ? Icons.cut
+                                      : Icons.cut_outlined,
+                                  color: feedItem.reactions[FirebaseAuth
+                                              .instance.currentUser?.uid] ==
+                                          'scissor'
+                                      ? Colors.blue
+                                      : null,
+                                ),
+                                onPressed: () => _toggleReaction(
+                                    feedItem, 'scissor', setState),
+                              ),
+                              Text('${feedItem.scissorCount}'),
+                            ],
+                          ),
                         ],
                       ),
                   ],
@@ -249,93 +310,113 @@ class MyAccountTab extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return const Center(child: Text('Error loading image'));
-          } else if (snapshot.hasData) {
+            return const Center(child: Icon(Icons.error));
+          } else {
             _imageCache[photoUrl] = snapshot.data!;
             return Image(image: snapshot.data!);
-          } else {
-            return const Center(child: Text('No image available'));
           }
         },
       );
     }
   }
 
-  Future<ImageProvider> _loadImage(String url) async {
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        return MemoryImage(response.bodyBytes);
-      } else {
-        throw Exception('Failed to load image');
-      }
-    } catch (e) {
-      throw Exception('Failed to load image: $e');
+  Future<ImageProvider> _loadImage(String imageUrl) async {
+    var response = await http.get(Uri.parse(imageUrl));
+    if (response.statusCode == 200) {
+      return MemoryImage(response.bodyBytes);
+    } else {
+      throw Exception('Failed to load image');
     }
   }
 
-  Future<void> _saveFeedItem(
-      FeedItem feedItem, String newTitle, String newDescription) async {
-    await FirebaseFirestore.instance
-        .collection('feedItems')
-        .doc(feedItem.id)
-        .update({
-      'title': newTitle,
-      'description': newDescription,
+  void _toggleReaction(
+      FeedItem feedItem, String reactionType, StateSetter setState) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      return;
+    }
+
+    final userId = currentUser.uid;
+
+    FirebaseFirestore.instance.runTransaction((transaction) async {
+      final feedItemRef =
+          FirebaseFirestore.instance.collection('feedItems').doc(feedItem.id);
+      final feedItemSnapshot = await transaction.get(feedItemRef);
+
+      if (!feedItemSnapshot.exists) {
+        return;
+      }
+
+      final currentReactions =
+          Map<String, String>.from(feedItemSnapshot['reactions'] ?? {});
+
+      if (currentReactions[userId] == reactionType) {
+        // If the user has already reacted with this type, remove the reaction
+        currentReactions.remove(userId);
+      } else {
+        // Otherwise, add or update the reaction
+        currentReactions[userId] = reactionType;
+      }
+
+      transaction.update(feedItemRef, {'reactions': currentReactions});
+    }).then((_) {
+      // Update the local state to reflect the change immediately
+      setState(() {
+        if (feedItem.reactions[userId] == reactionType) {
+          feedItem.reactions.remove(userId);
+        } else {
+          feedItem.reactions[userId] = reactionType;
+        }
+
+        feedItem.likesCount = feedItem.reactions.values
+            .where((reaction) => reaction == 'like')
+            .length;
+        feedItem.dopeCount = feedItem.reactions.values
+            .where((reaction) => reaction == 'dope')
+            .length;
+        feedItem.scissorCount = feedItem.reactions.values
+            .where((reaction) => reaction == 'scissor')
+            .length;
+      });
+    }).catchError((error) {
+      print('Failed to update reaction: $error');
     });
   }
 
-  Future<void> _deleteFeedItem(String feedItemId, BuildContext context) async {
-    bool confirmDelete = await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          title: const Row(
-            children: [
-              Text(
-                "Confirm Deletion",
-                style: TextStyle(color: Color(0xFF50727B)),
-              ),
-            ],
-          ),
-          content: const Text('Are you sure you want to delete this post?'),
-          actions: [
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: const Color(0xFF50727B),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: const Color.fromARGB(255, 142, 33, 25),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
-    );
+  void _saveFeedItem(
+      FeedItem feedItem, String newTitle, String newDescription) {
+    FirebaseFirestore.instance.collection('feedItems').doc(feedItem.id).update({
+      'title': newTitle,
+      'description': newDescription,
+    }).then((_) {
+      print('Feed item updated successfully');
+    }).catchError((error) {
+      print('Failed to update feed item: $error');
+    });
+  }
 
-    if (confirmDelete) {
-      await FirebaseFirestore.instance
-          .collection('feedItems')
-          .doc(feedItemId)
-          .delete();
-    }
+  void _deleteFeedItem(String feedItemId, BuildContext context) {
+    FirebaseFirestore.instance
+        .collection('feedItems')
+        .doc(feedItemId)
+        .delete()
+        .then((_) {
+      print('Feed item deleted successfully');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Feed item deleted successfully'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }).catchError((error) {
+      print('Failed to delete feed item: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete feed item'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    });
   }
 }
 
@@ -343,17 +424,48 @@ class FeedItem {
   final String id;
   String title;
   String description;
-  final String userId;
   final String userName;
   final String? photoUrl;
-  bool isEditing = false;
+  final Map<String, String> reactions;
+  int likesCount;
+  int dopeCount;
+  int scissorCount;
+  bool isEditing;
 
   FeedItem({
     required this.id,
     required this.title,
     required this.description,
-    required this.userId,
     required this.userName,
     this.photoUrl,
+    required this.reactions,
+    required this.likesCount,
+    required this.dopeCount,
+    required this.scissorCount,
+    this.isEditing = false,
   });
+
+  factory FeedItem.fromSnapshot(DocumentSnapshot snapshot, String userName) {
+    final data = snapshot.data() as Map<String, dynamic>;
+
+    final reactions = Map<String, String>.from(data['reactions'] ?? {});
+    final likesCount =
+        reactions.values.where((reaction) => reaction == 'like').length;
+    final dopeCount =
+        reactions.values.where((reaction) => reaction == 'dope').length;
+    final scissorCount =
+        reactions.values.where((reaction) => reaction == 'scissor').length;
+
+    return FeedItem(
+      id: snapshot.id,
+      title: data['title'] ?? 'No Title',
+      description: data['description'] ?? 'No Description',
+      userName: userName,
+      photoUrl: data['photoUrl'],
+      reactions: reactions,
+      likesCount: likesCount,
+      dopeCount: dopeCount,
+      scissorCount: scissorCount,
+    );
+  }
 }
