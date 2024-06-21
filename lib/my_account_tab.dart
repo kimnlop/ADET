@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:Crowdcuts/feed_item.dart';
 
@@ -345,23 +346,19 @@ class MyAccountTab extends StatelessWidget {
       final feedItemSnapshot = await transaction.get(feedItemRef);
 
       if (!feedItemSnapshot.exists) {
-        return;
+        throw Exception('Feed item does not exist');
       }
 
       final currentReactions =
-          Map<String, String>.from(feedItemSnapshot['reactions'] ?? {});
+          Map<String, String>.from(feedItemSnapshot.data()!['reactions'] ?? {});
 
       if (currentReactions[userId] == reactionType) {
-        // If the user has already reacted with this type, remove the reaction
         currentReactions.remove(userId);
       } else {
-        // Otherwise, add or update the reaction
         currentReactions[userId] = reactionType;
       }
-
       transaction.update(feedItemRef, {'reactions': currentReactions});
     }).then((_) {
-      // Update the local state to reflect the change immediately
       setState(() {
         if (feedItem.reactions[userId] == reactionType) {
           feedItem.reactions.remove(userId);
@@ -379,8 +376,19 @@ class MyAccountTab extends StatelessWidget {
             .where((reaction) => reaction == 'scissor')
             .length;
       });
-    }).catchError((error) {
+    }).catchError((error, stackTrace) {
       print('Failed to update reaction: $error');
+      print('Stack trace: $stackTrace');
+
+      if (error is FirebaseException) {
+        print('FirebaseException code: ${error.code}');
+        print('FirebaseException message: ${error.message}');
+      } else if (error is PlatformException) {
+        print('PlatformException code: ${error.code}');
+        print('PlatformException message: ${error.message}');
+      } else {
+        print('Unexpected error: $error');
+      }
     });
   }
 
