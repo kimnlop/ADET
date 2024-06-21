@@ -322,25 +322,79 @@ class MyAccountTab extends StatelessWidget {
     }
   }
 
-  Future<ImageProvider> _loadImage(String url) async {
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        return MemoryImage(response.bodyBytes);
-      } else {
-        throw Exception('Failed to load image');
-      }
-    } catch (e) {
-      throw Exception('Failed to load image: $e');
+  Future<ImageProvider> _loadImage(String imageUrl) async {
+    var response = await http.get(Uri.parse(imageUrl));
+    if (response.statusCode == 200) {
+      return MemoryImage(response.bodyBytes);
+    } else {
+      throw Exception('Failed to load image');
     }
   }
 
-  Future<void> _saveFeedItem(
-      FeedItem feedItem, String newTitle, String newDescription) async {
-    await FirebaseFirestore.instance
-        .collection('feedItems')
-        .doc(feedItem.id)
-        .update({
+  void _toggleReaction(
+      FeedItem feedItem, String reactionType, StateSetter setState) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      return;
+    }
+
+    final userId = currentUser.uid;
+
+    FirebaseFirestore.instance.runTransaction((transaction) async {
+      final feedItemRef =
+          FirebaseFirestore.instance.collection('feedItems').doc(feedItem.id);
+      final feedItemSnapshot = await transaction.get(feedItemRef);
+
+      if (!feedItemSnapshot.exists) {
+        throw Exception('Feed item does not exist');
+      }
+
+      final currentReactions =
+          Map<String, String>.from(feedItemSnapshot.data()!['reactions'] ?? {});
+
+      if (currentReactions[userId] == reactionType) {
+        currentReactions.remove(userId);
+      } else {
+        currentReactions[userId] = reactionType;
+      }
+      transaction.update(feedItemRef, {'reactions': currentReactions});
+    }).then((_) {
+      setState(() {
+        if (feedItem.reactions[userId] == reactionType) {
+          feedItem.reactions.remove(userId);
+        } else {
+          feedItem.reactions[userId] = reactionType;
+        }
+
+        feedItem.likesCount = feedItem.reactions.values
+            .where((reaction) => reaction == 'like')
+            .length;
+        feedItem.dopeCount = feedItem.reactions.values
+            .where((reaction) => reaction == 'dope')
+            .length;
+        feedItem.scissorCount = feedItem.reactions.values
+            .where((reaction) => reaction == 'scissor')
+            .length;
+      });
+    }).catchError((error, stackTrace) {
+      print('Failed to update reaction: $error');
+      print('Stack trace: $stackTrace');
+
+      if (error is FirebaseException) {
+        print('FirebaseException code: ${error.code}');
+        print('FirebaseException message: ${error.message}');
+      } else if (error is PlatformException) {
+        print('PlatformException code: ${error.code}');
+        print('PlatformException message: ${error.message}');
+      } else {
+        print('Unexpected error: $error');
+      }
+    });
+  }
+
+  void _saveFeedItem(
+      FeedItem feedItem, String newTitle, String newDescription) {
+    FirebaseFirestore.instance.collection('feedItems').doc(feedItem.id).update({
       'title': newTitle,
       'description': newDescription,
     }).then((_) {
