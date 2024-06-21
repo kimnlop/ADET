@@ -9,6 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:Crowdcuts/feed_item.dart';
 
 void main() {
   runApp(MyApp());
@@ -171,6 +172,68 @@ class _FeedTabState extends State<FeedTab> {
                   feedItem.description,
                   style: TextStyle(fontSize: 16),
                 ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      iconSize: 28,
+                      padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+                      icon: Icon(
+                        feedItem.reactions[
+                                    FirebaseAuth.instance.currentUser?.uid] ==
+                                'like'
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: feedItem.reactions[
+                                    FirebaseAuth.instance.currentUser?.uid] ==
+                                'like'
+                            ? Colors.red
+                            : null,
+                      ),
+                      onPressed: () =>
+                          _toggleReaction(feedItem, 'like', setState),
+                    ),
+                    Text('${feedItem.likesCount}'),
+                    IconButton(
+                      iconSize: 28,
+                      padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+                      icon: Icon(
+                        feedItem.reactions[
+                                    FirebaseAuth.instance.currentUser?.uid] ==
+                                'dope'
+                            ? Icons.whatshot
+                            : Icons.whatshot_outlined,
+                        color: feedItem.reactions[
+                                    FirebaseAuth.instance.currentUser?.uid] ==
+                                'dope'
+                            ? Colors.orange
+                            : null,
+                      ),
+                      onPressed: () =>
+                          _toggleReaction(feedItem, 'dope', setState),
+                    ),
+                    Text('${feedItem.dopeCount}'),
+                    IconButton(
+                      iconSize: 28,
+                      padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+                      icon: Icon(
+                        feedItem.reactions[
+                                    FirebaseAuth.instance.currentUser?.uid] ==
+                                'scissor'
+                            ? Icons.cut
+                            : Icons.cut_outlined,
+                        color: feedItem.reactions[
+                                    FirebaseAuth.instance.currentUser?.uid] ==
+                                'scissor'
+                            ? Colors.blue
+                            : null,
+                      ),
+                      onPressed: () =>
+                          _toggleReaction(feedItem, 'scissor', setState),
+                    ),
+                    Text('${feedItem.scissorCount}'),
+                  ],
+                ),
               ],
             ),
           ),
@@ -210,6 +273,60 @@ class _FeedTabState extends State<FeedTab> {
     } catch (e) {
       throw Exception('Failed to load image: $e');
     }
+  }
+
+  void _toggleReaction(
+      FeedItem feedItem, String reactionType, StateSetter setState) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      return;
+    }
+
+    final userId = currentUser.uid;
+
+    FirebaseFirestore.instance.runTransaction((transaction) async {
+      final feedItemRef =
+          FirebaseFirestore.instance.collection('feedItems').doc(feedItem.id);
+      final feedItemSnapshot = await transaction.get(feedItemRef);
+
+      if (!feedItemSnapshot.exists) {
+        return;
+      }
+
+      final currentReactions =
+          Map<String, String>.from(feedItemSnapshot['reactions'] ?? {});
+
+      if (currentReactions[userId] == reactionType) {
+        // If the user has already reacted with this type, remove the reaction
+        currentReactions.remove(userId);
+      } else {
+        // Otherwise, add or update the reaction
+        currentReactions[userId] = reactionType;
+      }
+
+      transaction.update(feedItemRef, {'reactions': currentReactions});
+    }).then((_) {
+      // Update the local state to reflect the change immediately
+      setState(() {
+        if (feedItem.reactions[userId] == reactionType) {
+          feedItem.reactions.remove(userId);
+        } else {
+          feedItem.reactions[userId] = reactionType;
+        }
+
+        feedItem.likesCount = feedItem.reactions.values
+            .where((reaction) => reaction == 'like')
+            .length;
+        feedItem.dopeCount = feedItem.reactions.values
+            .where((reaction) => reaction == 'dope')
+            .length;
+        feedItem.scissorCount = feedItem.reactions.values
+            .where((reaction) => reaction == 'scissor')
+            .length;
+      });
+    }).catchError((error) {
+      print('Failed to update reaction: $error');
+    });
   }
 
   void _showPostDialog() {
@@ -430,34 +547,5 @@ class _FeedTabState extends State<FeedTab> {
 
   void _clearPostingInProgress() {
     _isPostingInProgress = false;
-  }
-}
-
-class FeedItem {
-  final String id;
-  final String title;
-  final String description;
-  final String userId;
-  final String userName;
-  final String? photoUrl;
-
-  FeedItem({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.userId,
-    required this.userName,
-    this.photoUrl,
-  });
-
-  factory FeedItem.fromSnapshot(DocumentSnapshot snapshot, String userName) {
-    return FeedItem(
-      id: snapshot.id,
-      title: snapshot['title'],
-      description: snapshot['description'],
-      userId: snapshot['userId'],
-      userName: userName,
-      photoUrl: snapshot['photoUrl'],
-    );
   }
 }
