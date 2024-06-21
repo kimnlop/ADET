@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:Crowdcuts/feed_item.dart';
 
@@ -321,72 +322,25 @@ class MyAccountTab extends StatelessWidget {
     }
   }
 
-  Future<ImageProvider> _loadImage(String imageUrl) async {
-    var response = await http.get(Uri.parse(imageUrl));
-    if (response.statusCode == 200) {
-      return MemoryImage(response.bodyBytes);
-    } else {
-      throw Exception('Failed to load image');
-    }
-  }
-
-  void _toggleReaction(
-      FeedItem feedItem, String reactionType, StateSetter setState) {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
-      return;
-    }
-
-    final userId = currentUser.uid;
-
-    FirebaseFirestore.instance.runTransaction((transaction) async {
-      final feedItemRef =
-          FirebaseFirestore.instance.collection('feedItems').doc(feedItem.id);
-      final feedItemSnapshot = await transaction.get(feedItemRef);
-
-      if (!feedItemSnapshot.exists) {
-        return;
-      }
-
-      final currentReactions =
-          Map<String, String>.from(feedItemSnapshot['reactions'] ?? {});
-
-      if (currentReactions[userId] == reactionType) {
-        // If the user has already reacted with this type, remove the reaction
-        currentReactions.remove(userId);
+  Future<ImageProvider> _loadImage(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        return MemoryImage(response.bodyBytes);
       } else {
-        // Otherwise, add or update the reaction
-        currentReactions[userId] = reactionType;
+        throw Exception('Failed to load image');
       }
-
-      transaction.update(feedItemRef, {'reactions': currentReactions});
-    }).then((_) {
-      // Update the local state to reflect the change immediately
-      setState(() {
-        if (feedItem.reactions[userId] == reactionType) {
-          feedItem.reactions.remove(userId);
-        } else {
-          feedItem.reactions[userId] = reactionType;
-        }
-
-        feedItem.likesCount = feedItem.reactions.values
-            .where((reaction) => reaction == 'like')
-            .length;
-        feedItem.dopeCount = feedItem.reactions.values
-            .where((reaction) => reaction == 'dope')
-            .length;
-        feedItem.scissorCount = feedItem.reactions.values
-            .where((reaction) => reaction == 'scissor')
-            .length;
-      });
-    }).catchError((error) {
-      print('Failed to update reaction: $error');
-    });
+    } catch (e) {
+      throw Exception('Failed to load image: $e');
+    }
   }
 
-  void _saveFeedItem(
-      FeedItem feedItem, String newTitle, String newDescription) {
-    FirebaseFirestore.instance.collection('feedItems').doc(feedItem.id).update({
+  Future<void> _saveFeedItem(
+      FeedItem feedItem, String newTitle, String newDescription) async {
+    await FirebaseFirestore.instance
+        .collection('feedItems')
+        .doc(feedItem.id)
+        .update({
       'title': newTitle,
       'description': newDescription,
     }).then((_) {
